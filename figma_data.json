@@ -1,0 +1,50 @@
+{
+  "document": {
+    "id": "0:0",
+    "name": "Document",
+    "type": "DOCUMENT",
+    "scrollBehavior": "SCROLLS",
+    "children": [
+      {
+        "id": "0:1",
+        "name": "Page 1",
+        "type": "CANVAS",
+        "scrollBehavior": "SCROLLS",
+        "children": [
+          "@{id=6:4; name=MacBook Pro 14\" - 1; type=FRAME; scrollBehavior=SCROLLS; children=System.Object[]; blendMode=PASS_THROUGH; clipsContent=True; background=System.Object[]; fills=System.Object[]; strokes=System.Object[]; strokeWeight=1; strokeAlign=INSIDE; backgroundColor=; absoluteBoundingBox=; absoluteRenderBounds=; constraints=; effects=System.Object[]; interactions=System.Object[]; complexStrokeProperties=}",
+          "@{id=9:13; name=MacBook Pro 14\" - 2; type=FRAME; scrollBehavior=SCROLLS; children=System.Object[]; blendMode=PASS_THROUGH; clipsContent=True; background=System.Object[]; fills=System.Object[]; strokes=System.Object[]; strokeWeight=1; strokeAlign=INSIDE; backgroundColor=; absoluteBoundingBox=; absoluteRenderBounds=; constraints=; effects=System.Object[]; interactions=System.Object[]; complexStrokeProperties=}"
+        ],
+        "backgroundColor": {
+          "r": 0.9607843160629272,
+          "g": 0.9607843160629272,
+          "b": 0.9607843160629272,
+          "a": 1.0
+        },
+        "prototypeStartNodeID": "6:4",
+        "flowStartingPoints": [
+          "@{nodeId=6:4; name=Flow 1}"
+        ],
+        "prototypeDevice": {
+          "type": "PRESET",
+          "size": "@{width=1512; height=982}",
+          "presetIdentifier": "APPLE_MACBOOK_PRO_14IN_SILVER",
+          "rotation": "NONE"
+        },
+        "prototypeBackgrounds": [
+          "@{r=0.760576844215393; g=0.760576844215393; b=0.760576844215393; a=1}"
+        ]
+      }
+    ]
+  },
+  "components": {},
+  "componentSets": {},
+  "schemaVersion": 0,
+  "styles": {},
+  "name": "antra's design",
+  "lastModified": "2026-09-21T11:10:30Z",
+  "thumbnailUrl": "https://s3-alpha.figma.com/thumbnails/3a63b414-ea54-43bd-aeaa-362175c14bf3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQ4GOSFWCYH2VEHUI%2F20260920%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260920T120000Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=d8e15536e18ae3599065af6ab9dfc51237ac3774aac7722acd55bece867f3a61",
+  "version": "2401638256704590373",
+  "role": "owner",
+  "editorType": "figma",
+  "linkAccess": "plan_edit"
+}

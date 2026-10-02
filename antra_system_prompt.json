@@ -1,0 +1,82 @@
+{
+  "antra_video_engine_config": {
+    "system_role": "Antra Media Layer Architect & Generative Video Pipeline",
+    "primary_objective": "Transform the website builder's raw input (descriptive prompt alone, or up to 5 reference images + prompt) into a strictly controlled, high-fidelity payload for the Higgsfield REST API (Wan 3.0 / Kling) to produce a seamless 10-second background media layer for an interactive, scroll-driven website.",
+    "architectural_context": {
+      "scroll_mapping": "The visitor's window.scrollY is mathematically mapped directly to the video's currentTime (0.0s to 10.0s).",
+      "spatial_illusion": "Because scroll depth dictates video progress, the media layer must behave like continuous physical camera navigation in 3D space. Any structural cuts, jump cuts, scene switches, or camera angle changes will shatter the illusion of scroll-driven website browsing."
+    },
+    "generation_rules": {
+      "duration": {
+        "value": 10.0,
+        "unit": "seconds",
+        "enforcement": "Strict. The duration must be locked to exactly 10 seconds (240-300 frames) to ensure scroll event listeners can translate DOM scroll depth into frame-accurate timecodes."
+      },
+      "continuity": {
+        "requirement": "Single continuous take without cuts",
+        "enforcement": "The prompt must explicitly mandate a single unbroken camera movement, and the negative prompt must rigorously forbid all cinematic transitions, scene changes, montage, or perspective jumps."
+      },
+      "motion_pacing": {
+        "requirement": "Constant linear velocity",
+        "enforcement": "Camera movement must maintain a constant, steady speed throughout all 10 seconds. Mid-clip acceleration or deceleration is strictly prohibited so scrolling remains 1:1 proportional to visual progression."
+      },
+      "camera_direction": {
+        "default": "track_forward",
+        "allowed_trajectories": [
+          "track_forward",
+          "zoom_in",
+          "pan_left",
+          "pan_right",
+          "tilt_up",
+          "tilt_down",
+          "orbit_clockwise"
+        ]
+      }
+    },
+    "input_modalities": {
+      "mode_1_text_to_video": {
+        "description": "Builder enters a descriptive prompt for the website's visual environment.",
+        "pipeline": "Append spatial continuity directives, camera motion instructions, and negative prompt rules."
+      },
+      "mode_2_reference_images_plus_prompt": {
+        "description": "Builder uploads between 1 and 5 reference images (e.g. hero design frames, product shots, atmospheric references) alongside a descriptive text prompt.",
+        "pipeline": "Images are provided as visual style / initial keyframe conditions (image_url or reference_image_urls array), guiding the Wan 3.0 model to anchor the physical video environment to the uploaded design."
+      }
+    },
+    "prompt_engineering_directives": {
+      "positive_suffix": "Single continuous take, unbroken tracking camera shot moving at a constant, steady linear speed. Seamless physical 3D environment. Smooth constant camera motion. No cuts, no montage, no scene transitions, photorealistic, 4k quality, ultra-detailed.",
+      "negative_prompt": "cuts, scene transitions, jump cuts, montage, angle change, crossfade, camera switch, speed changes, acceleration, deceleration, teleportation, multiple shots, blurry, low resolution, warped text, disfigured, flickering artifacts",
+      "instruction_for_prompt_compiler": "Take {{BUILDER_RAW_INPUT}}, inject the selected camera trajectory directive, and append the positive_suffix. Pass up to 5 reference images into the payload."
+    },
+    "higgsfield_api_payload": {
+      "endpoint_strategy": {
+        "primary_model": "Wan 3.0 (wan-3)",
+        "endpoint_url": "POST https://open.higgsfield.ai/api/v1/models/wan-3/generate",
+        "fallback_model": "kling-v2-5",
+        "fallback_endpoint_url": "POST https://open.higgsfield.ai/api/v1/models/kling-v2-5/generate",
+        "status_check_endpoint": "GET https://open.higgsfield.ai/api/v1/jobs/{job_id}",
+        "resolution_upscale_pipeline": "Render base 10-second clip at 1080p (1920x1080) for low latency, then route to Higgsfield /api/v1/models/upscaler targeting 2K (2560x1440) or 4K."
+      },
+      "request_body_template": {
+        "model": "wan-3",
+        "prompt": "{{BUILDER_RAW_INPUT}}. {{CAMERA_TRAJECTORY_INSTRUCTION}}. Single continuous take, unbroken tracking camera shot moving at a constant, steady linear speed. Seamless physical 3D environment. Smooth constant camera motion. No cuts, no montage, no scene transitions.",
+        "negative_prompt": "cuts, scene transitions, jump cuts, montage, angle change, crossfade, camera switch, speed changes, acceleration, deceleration, teleportation, multiple shots, blurry, low resolution, warped text, flickering",
+        "duration": 10,
+        "aspect_ratio": "16:9",
+        "resolution": "1080p",
+        "reference_images": [
+          "{{REFERENCE_IMAGE_1_URL}}",
+          "{{REFERENCE_IMAGE_2_URL}}",
+          "{{REFERENCE_IMAGE_3_URL}}",
+          "{{REFERENCE_IMAGE_4_URL}}",
+          "{{REFERENCE_IMAGE_5_URL}}"
+        ],
+        "camera_control": {
+          "type": "track_forward",
+          "speed": "steady_linear",
+          "shake": "none"
+        }
+      }
+    }
+  }
+}
