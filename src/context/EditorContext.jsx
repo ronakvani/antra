@@ -6,16 +6,17 @@ const getInitialViewMode = () => {
   const path = window.location.pathname;
   if (path === '/editor') return 'editor';
   if (path === '/preview') return 'preview';
+  if (path === '/pricing') return 'pricing';
   return 'landing';
 };
 
 export const EditorProvider = ({ children }) => {
-  // Navigation View: 'landing' | 'editor' | 'preview'
+  // Navigation View: 'landing' | 'editor' | 'preview' | 'pricing'
   const [viewMode, setViewModeState] = useState(getInitialViewMode);
   
   const setViewMode = (mode) => {
     setViewModeState(mode);
-    const targetPath = mode === 'editor' ? '/editor' : mode === 'preview' ? '/preview' : '/';
+    const targetPath = mode === 'editor' ? '/editor' : mode === 'preview' ? '/preview' : mode === 'pricing' ? '/pricing' : '/';
     if (window.location.pathname !== targetPath) {
       window.history.pushState({ mode }, '', targetPath);
     }
@@ -26,6 +27,7 @@ export const EditorProvider = ({ children }) => {
       const path = window.location.pathname;
       if (path === '/editor') setViewModeState('editor');
       else if (path === '/preview') setViewModeState('preview');
+      else if (path === '/pricing') setViewModeState('pricing');
       else setViewModeState('landing');
     };
     window.addEventListener('popstate', handlePopState);

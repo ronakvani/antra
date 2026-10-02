@@ -12,11 +12,15 @@ export default {
       },
       colors: {
         antra: {
-          dark: '#121214',
-          panel: '#1e1e24',
-          border: '#2d2d38',
-          accent: '#6366f1',
-          hover: '#4f46e5'
+          ivory: '#F8F4E6',
+          cherry: '#FEF4F4',
+          plum: '#F2A0A1',
+          crimson: '#E95464',
+          dark: '#0e0e11',
+          panel: '#18181c',
+          border: '#26262c',
+          accent: '#E95464',
+          hover: '#d44353'
         }
       }
     },

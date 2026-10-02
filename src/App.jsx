@@ -4,6 +4,7 @@ import { EditorProvider, useEditor } from './context/EditorContext';
 import { LandingView } from './components/Landing/LandingView';
 import { EditorView } from './components/Editor/EditorView';
 import { ScrollViewer } from './components/Viewer/ScrollViewer';
+import { PricingView } from './components/Pricing/PricingView';
 import { AuthModal } from './components/Auth/AuthModal';
 
 const MainContainer = () => {
@@ -14,6 +15,7 @@ const MainContainer = () => {
       {viewMode === 'landing' && <LandingView />}
       {viewMode === 'preview' && <ScrollViewer />}
       {viewMode === 'editor' && <EditorView />}
+      {viewMode === 'pricing' && <PricingView />}
       <AuthModal />
     </>
   );
