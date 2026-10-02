@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useEditor } from '../../context/EditorContext';
 import { ArrowLeft } from 'lucide-react';
 import { VideoJsPlayer } from '../Common/VideoJsPlayer';
-import { CanvasSequencePlayer } from '../Common/CanvasSequencePlayer';
 import { computeOpenReelMotionState } from '../../utils/openreelAnimationEngine';
 import { getPenpotNodeLayoutStyle } from '../../utils/penpotCodeEngine';
 import { PenpotComponentRenderer } from '../Editor/PenpotComponentRenderer';
@@ -15,14 +14,11 @@ export const ScrollViewer = () => {
   const containerRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(20.0);
-  const [playbackMode, setPlaybackMode] = useState('canvas'); // 'canvas' | 'video'
 
   // References for smooth Lerp (Linear Interpolation) physics loop
   const targetTimeRef = useRef(0);
   const lerpedTimeRef = useRef(0);
   const lastEmittedTimeRef = useRef(0);
-
-  const scrollRatio = duration > 0 ? Math.max(0, Math.min(1, currentTime / duration)) : 0;
 
   useEffect(() => {
     let animFrameId;
@@ -79,7 +75,7 @@ export const ScrollViewer = () => {
 
   return (
     <div ref={containerRef} className="relative w-full bg-black min-h-[500vh]">
-      {/* Top Floating Controls */}
+      {/* Top Floating Exit Button */}
       <div className="fixed top-4 left-4 z-50 flex items-center gap-3">
         <button
           onClick={() => setViewMode('editor')}
@@ -88,51 +84,17 @@ export const ScrollViewer = () => {
           <ArrowLeft className="w-4 h-4" />
           <span>Exit Preview</span>
         </button>
-
-        {/* Playback Mode Switcher */}
-        <div className="flex items-center bg-black/70 backdrop-blur-md border border-white/20 rounded-full p-1 text-xs shadow-2xl">
-          <button
-            onClick={() => setPlaybackMode('canvas')}
-            className={`px-3 py-1 rounded-full transition font-medium cursor-pointer ${
-              playbackMode === 'canvas'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            Canvas Sequence
-          </button>
-          <button
-            onClick={() => setPlaybackMode('video')}
-            className={`px-3 py-1 rounded-full transition font-medium cursor-pointer ${
-              playbackMode === 'video'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            Video.js
-          </button>
-        </div>
       </div>
 
       {/* Edge-to-Edge Fullscreen Visual Web Viewport (Zero Black Borders) */}
       <div className="fixed inset-0 w-full h-full bg-black overflow-hidden select-none">
-        {/* Media Layer: Fullscreen Object-Cover Video / Canvas Sequence */}
-        {playbackMode === 'canvas' ? (
-          <CanvasSequencePlayer
-            frameCount={500}
-            framePrefix="/frames/frame_"
-            frameExtension=".webp"
-            scrollProgress={scrollRatio}
-            className="w-full h-full object-cover pointer-events-none"
-          />
-        ) : (
-          <VideoJsPlayer
-            src={videoSrc}
-            currentTime={currentTime}
-            onLoadedMetadata={(dur) => setDuration(dur || 20.0)}
-            className="w-full h-full object-cover pointer-events-none"
-          />
-        )}
+        {/* Media Layer: Fullscreen Object-Cover Video */}
+        <VideoJsPlayer
+          src={videoSrc}
+          currentTime={currentTime}
+          onLoadedMetadata={(dur) => setDuration(dur || 20.0)}
+          className="w-full h-full object-cover pointer-events-none"
+        />
 
         {/* Dynamic Web Component Overlay Layer */}
         <div className="absolute inset-0 pointer-events-auto z-30">
