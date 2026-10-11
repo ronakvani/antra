@@ -33,7 +33,10 @@ import {
   Type
 } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
+import { useAuth } from '../../context/AuthContext';
 import { createGrapesComponentRecord } from '../../utils/grapesEngine';
+import { isFeatureAllowed, getMaxDurationForUser } from '../../utils/planFeatures';
+import { PlanUpgradeModal } from '../Common/PlanUpgradeModal';
 
 export const ComponentLibrary = () => {
   const {
@@ -49,9 +52,12 @@ export const ComponentLibrary = () => {
     currentTime
   } = useEditor();
 
+  const { user } = useAuth();
+
   // Active left tab: 'layers' (File / Tree) or 'components' (Assets / Library)
   const [activeTab, setActiveTab] = useState('layers');
   const [searchTerm, setSearchTerm] = useState('');
+  const [gatedModal, setGatedModal] = useState({ isOpen: false, featureKey: '' });
 
   const componentGroups = [
     {
@@ -270,12 +276,14 @@ export const ComponentLibrary = () => {
       ]
     },
     {
-      group: 'Forms',
+      group: 'Forms (Lead-Gen)',
       blocks: [
         {
           type: 'input',
           label: 'Text Input',
           icon: FormInput,
+          featureKey: 'leadGenForms',
+          requiredPlan: 'ultra',
           defaultContent: 'Enter email address...',
           style: {
             backgroundColor: '#ffffff',
@@ -292,6 +300,8 @@ export const ComponentLibrary = () => {
           type: 'textarea',
           label: 'Textarea Box',
           icon: FileText,
+          featureKey: 'leadGenForms',
+          requiredPlan: 'ultra',
           defaultContent: 'Write your message here...',
           style: {
             backgroundColor: '#ffffff',
@@ -330,7 +340,14 @@ export const ComponentLibrary = () => {
   ];
 
   const handleAdd = (block, groupName) => {
-    const isWebComp = groupName !== 'Shapes';
+    // Feature Gating Check
+    if (block.featureKey && !isFeatureAllowed(user, block.featureKey)) {
+      setGatedModal({ isOpen: true, featureKey: block.featureKey });
+      return;
+    }
+
+    const maxDuration = getMaxDurationForUser(user);
+    const isWebComp = !groupName.includes('Shapes');
     const grapesRecord = isWebComp
       ? createGrapesComponentRecord(block.type, block.defaultContent)
       : null;
@@ -338,8 +355,8 @@ export const ComponentLibrary = () => {
     addComponent({
       type: block.type,
       content: block.defaultContent,
-      startTime: Math.max(0, currentTime),
-      endTime: Math.min(20, currentTime + 5.0),
+      startTime: Math.max(0, Math.min(currentTime, maxDuration - 1.0)),
+      endTime: Math.min(maxDuration, currentTime + 5.0),
       style: block.style,
       grapesEngine: grapesRecord
     });
@@ -581,22 +598,41 @@ export const ComponentLibrary = () => {
               return (
                 <div key={group.group}>
                   {/* Category Title */}
-                  <h3 className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-2 font-semibold">
-                    {group.group}
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
+                      {group.group}
+                    </h3>
+                  </div>
 
                   {/* 4-Column Compact Grid */}
                   <div className="grid grid-cols-4 gap-1.5">
                     {filteredBlocks.map((block) => {
                       const IconComp = block.icon;
+                      const isGated = block.featureKey && !isFeatureAllowed(user, block.featureKey);
+
                       return (
                         <button
                           key={block.type}
                           onClick={() => handleAdd(block, group.group)}
-                          title={`Add ${block.label}`}
-                          className="group relative aspect-square bg-zinc-50 hover:bg-indigo-50 border border-zinc-200/80 hover:border-indigo-400 rounded-lg flex items-center justify-center transition shadow-2xs hover:scale-105 cursor-pointer"
+                          title={isGated ? `${block.label} (${block.requiredPlan} plan)` : `Add ${block.label}`}
+                          className={`group relative aspect-square border rounded-lg flex items-center justify-center transition shadow-2xs hover:scale-105 cursor-pointer ${
+                            isGated
+                              ? 'bg-zinc-50/70 border-dashed border-zinc-300 hover:border-[#E95464]'
+                              : 'bg-zinc-50 hover:bg-indigo-50 border-zinc-200/80 hover:border-indigo-400'
+                          }`}
                         >
-                          <IconComp className="w-4 h-4 text-zinc-600 group-hover:text-indigo-600 transition-colors" />
+                          <IconComp
+                            className={`w-4 h-4 transition-colors ${
+                              isGated
+                                ? 'text-zinc-400 group-hover:text-[#E95464]'
+                                : 'text-zinc-600 group-hover:text-indigo-600'
+                            }`}
+                          />
+                          {isGated && (
+                            <span className="absolute -top-1 -right-1 px-1 py-0.2 bg-[#E95464] text-white rounded text-[8px] font-mono leading-tight">
+                              {block.requiredPlan || 'tier'}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -607,6 +643,13 @@ export const ComponentLibrary = () => {
           </div>
         )}
       </div>
+
+      {/* Plan Upgrade Gating Modal */}
+      <PlanUpgradeModal
+        isOpen={gatedModal.isOpen}
+        onClose={() => setGatedModal({ isOpen: false, featureKey: '' })}
+        featureKey={gatedModal.featureKey}
+      />
     </aside>
   );
 };

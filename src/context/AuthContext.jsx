@@ -6,7 +6,8 @@ import {
   getCurrentBuilderUser,
   getDiceBearVoxelBotAvatar,
   getSupabaseCredentials,
-  setSupabaseCredentials
+  setSupabaseCredentials,
+  updateUserPlan
 } from '../utils/authService';
 
 const AuthContext = createContext(null);
@@ -17,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
   const [supabaseConfig, setSupabaseConfigState] = useState(getSupabaseCredentials);
+  const [pendingPlan, setPendingPlan] = useState('pro');
   
   // Modal state
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -42,7 +44,8 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  const openAuthModal = (mode = 'login') => {
+  const openAuthModal = (mode = 'login', plan = null) => {
+    if (plan) setPendingPlan(plan);
     setAuthModalMode(mode);
     setAuthError('');
     setAuthSuccess('');
@@ -62,12 +65,29 @@ export const AuthProvider = ({ children }) => {
     return updated;
   };
 
+  const setUserPlan = async (planName) => {
+    try {
+      const updatedUser = await updateUserPlan(planName);
+      if (updatedUser) {
+        setUser((prev) => ({ ...prev, ...updatedUser }));
+      }
+      return updatedUser;
+    } catch (err) {
+      console.error('Failed to set user plan:', err);
+      throw err;
+    }
+  };
+
   const login = async (email, password) => {
     setAuthError('');
     setAuthSuccess('');
     setLoading(true);
     try {
-      const loggedInUser = await signInBuilder({ email, password });
+      let loggedInUser = await signInBuilder({ email, password });
+      if (pendingPlan && (!loggedInUser.plan || loggedInUser.plan !== pendingPlan)) {
+        const updated = await updateUserPlan(pendingPlan);
+        loggedInUser = { ...loggedInUser, ...updated };
+      }
       setUser(loggedInUser);
       closeAuthModal();
       return loggedInUser;
@@ -84,7 +104,13 @@ export const AuthProvider = ({ children }) => {
     setAuthSuccess('');
     setLoading(true);
     try {
-      const newUser = await signUpBuilder({ email, password, username, avatarSeed });
+      const newUser = await signUpBuilder({
+        email,
+        password,
+        username,
+        avatarSeed,
+        plan: pendingPlan || 'pro'
+      });
       setUser(newUser);
       if (newUser.confirmed === false) {
         setAuthSuccess('Account created successfully! Please check your email inbox to verify your account.');
@@ -132,6 +158,7 @@ export const AuthProvider = ({ children }) => {
         login,
         signup,
         logout,
+        setUserPlan,
         getDiceBearVoxelBotAvatar
       }}
     >

@@ -1,18 +1,18 @@
-import React from 'react';
-import { ArrowLeft, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Check, CheckCircle2 } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
 import { useAuth } from '../../context/AuthContext';
 
 export const PricingView = () => {
-  const { setViewMode } = useEditor();
-  const { user, openAuthModal } = useAuth();
+  const { setViewMode, setSelectedPlan } = useEditor();
+  const { user, openAuthModal, setUserPlan } = useAuth();
+  const [successNotice, setSuccessNotice] = useState('');
 
-  const handleSelectPlan = () => {
-    if (!user) {
-      openAuthModal('signup');
-    } else {
-      setViewMode('editor');
+  const handleSelectPlan = (planId = 'pro') => {
+    if (setSelectedPlan) {
+      setSelectedPlan(planId);
     }
+    setViewMode('checkout');
   };
 
   const CheckIcon = () => (
@@ -25,12 +25,22 @@ export const PricingView = () => {
     <span className="text-zinc-600 font-normal select-none">—</span>
   );
 
+  const userPlan = (user?.plan || 'pro').toLowerCase();
+
   return (
     <div className="min-h-screen w-full bg-[#070709] text-zinc-300 font-sans selection:bg-[#E95464]/20 selection:text-[#F2A0A1]">
       
       {/* Subtle Antra Brand Ambient Glow (Ivory #F8F4E6, Cherry #FEF4F4, Plum #F2A0A1, Crimson #E95464) */}
       <div className="fixed top-0 left-1/4 w-[600px] h-[300px] bg-gradient-to-br from-[#E95464]/10 via-[#F2A0A1]/5 to-transparent blur-[120px] pointer-events-none rounded-full" />
       <div className="fixed top-20 right-1/4 w-[500px] h-[260px] bg-gradient-to-bl from-[#F2A0A1]/8 via-[#F8F4E6]/5 to-transparent blur-[100px] pointer-events-none rounded-full" />
+
+      {/* Success Notification */}
+      {successNotice && (
+        <div className="fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-normal rounded-xl backdrop-blur-md shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{successNotice}</span>
+        </div>
+      )}
 
       {/* Top Minimal Navigation Bar */}
       <header className="sticky top-0 z-40 w-full bg-[#070709]/85 backdrop-blur-md border-b border-white/[0.06]">
@@ -55,12 +65,17 @@ export const PricingView = () => {
 
           <div className="flex items-center gap-3">
             {user ? (
-              <button
-                onClick={() => setViewMode('editor')}
-                className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white text-xs font-normal rounded-lg transition border border-white/10 cursor-pointer lowercase"
-              >
-                open studio
-              </button>
+              <div className="flex items-center gap-2.5">
+                <span className="text-xs font-normal text-zinc-500 lowercase hidden sm:inline">
+                  plan: <strong className="text-white font-normal">{user.plan || 'pro'}</strong>
+                </span>
+                <button
+                  onClick={() => setViewMode('editor')}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white text-xs font-normal rounded-lg transition border border-white/10 cursor-pointer lowercase"
+                >
+                  open studio
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-2 text-xs font-normal">
                 <button
@@ -118,44 +133,48 @@ export const PricingView = () => {
                     15-day launch price
                   </div>
                   <button
-                    onClick={handleSelectPlan}
-                    className="mt-2.5 w-full py-1.5 text-[11px] font-normal text-zinc-950 bg-white hover:bg-[#FEF4F4] rounded transition cursor-pointer lowercase"
+                    onClick={() => handleSelectPlan('pro')}
+                    className={`mt-2.5 w-full py-1.5 text-[11px] font-normal rounded transition cursor-pointer lowercase ${
+                      user && userPlan === 'pro'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'text-zinc-950 bg-white hover:bg-[#FEF4F4]'
+                    }`}
                   >
-                    get pro
+                    {user && userPlan === 'pro' ? 'active plan' : 'get pro'}
                   </button>
                 </th>
 
                 {/* Ultra Plan Column */}
                 <th className="w-[21%] py-6 px-4 text-center align-top">
-                  <div className="font-normal text-base text-zinc-400 lowercase">ultra</div>
-                  <div className="font-normal text-xs text-zinc-500 mt-0.5">
-                    $19<span className="text-[10px] text-zinc-600">/mo</span>
+                  <div className="font-normal text-base text-zinc-300 lowercase">ultra</div>
+                  <div className="font-normal text-xs text-zinc-400 mt-0.5">
+                    $19<span className="text-[10px] text-zinc-500">/mo</span>
                   </div>
-                  <div className="text-[10px] font-normal text-zinc-500 mt-0.5 lowercase">
-                    upcoming plan
+                  <div className="text-[10px] font-normal text-[#F2A0A1] mt-0.5 lowercase">
+                    spatial 3d tier
                   </div>
                   <button
-                    disabled
-                    className="mt-2.5 w-full py-1.5 text-[11px] font-normal text-zinc-500 bg-white/[0.04] rounded border border-white/[0.06] cursor-not-allowed lowercase"
+                    onClick={() => handleSelectPlan('ultra')}
+                    className="mt-2.5 w-full py-1.5 text-[11px] font-normal text-white bg-white/10 hover:bg-white/20 rounded border border-white/20 transition cursor-pointer lowercase"
                   >
-                    upcoming
+                    get ultra
                   </button>
                 </th>
 
                 {/* Max Plan Column */}
                 <th className="w-[21%] py-6 px-4 text-center align-top">
-                  <div className="font-normal text-base text-zinc-400 lowercase">max</div>
-                  <div className="font-normal text-xs text-zinc-500 mt-0.5">
-                    $39<span className="text-[10px] text-zinc-600">/mo</span>
+                  <div className="font-normal text-base text-zinc-300 lowercase">max</div>
+                  <div className="font-normal text-xs text-zinc-400 mt-0.5">
+                    $39<span className="text-[10px] text-zinc-500">/mo</span>
                   </div>
-                  <div className="text-[10px] font-normal text-zinc-500 mt-0.5 lowercase">
-                    upcoming plan
+                  <div className="text-[10px] font-normal text-[#E95464] mt-0.5 lowercase">
+                    agency & diffusion
                   </div>
                   <button
-                    disabled
-                    className="mt-2.5 w-full py-1.5 text-[11px] font-normal text-zinc-500 bg-white/[0.04] rounded border border-white/[0.06] cursor-not-allowed lowercase"
+                    onClick={() => handleSelectPlan('max')}
+                    className="mt-2.5 w-full py-1.5 text-[11px] font-normal text-white bg-white/10 hover:bg-white/20 rounded border border-white/20 transition cursor-pointer lowercase"
                   >
-                    upcoming
+                    get max
                   </button>
                 </th>
               </tr>

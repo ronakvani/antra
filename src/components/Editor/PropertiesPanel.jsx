@@ -36,6 +36,8 @@ import {
   Code2
 } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
+import { useAuth } from '../../context/AuthContext';
+import { getMaxDurationForUser, getUserPlanConfig } from '../../utils/planFeatures';
 import {
   PENPOT_COLOR_PRESETS,
   PENPOT_GRADIENT_PRESETS,
@@ -210,6 +212,9 @@ export const PropertiesPanel = () => {
     toggleLockComponent,
     toggleHideComponent
   } = useEditor();
+  const { user } = useAuth();
+  const maxPlanDuration = getMaxDurationForUser(user);
+  const planConfig = getUserPlanConfig(user);
 
   const [activeTab, setActiveTab] = useState('design'); // 'design' | 'interactivity' | 'code'
   const [codeSubTab, setCodeSubTab] = useState('css'); // 'css' | 'svg' | 'jsx' | 'json'
@@ -886,26 +891,29 @@ export const PropertiesPanel = () => {
           <div className="p-3 space-y-4 text-xs">
             {/* Motion Timing Range */}
             <div>
-              <div className="text-[11px] font-semibold text-zinc-700 uppercase tracking-wider mb-2">
-                Timeline Occurrence
+              <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-700 uppercase tracking-wider mb-2">
+                <span>Timeline Occurrence</span>
+                <span className="text-[10px] font-mono text-zinc-400 lowercase font-normal">
+                  max {maxPlanDuration}s ({user?.plan || 'pro'})
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <ScrubInput
                   label="Start"
                   value={selectedComp.startTime || 0}
                   min={0}
-                  max={20}
+                  max={maxPlanDuration}
                   step={0.1}
-                  onChange={(v) => updateComponent(selectedComp.id, { startTime: v })}
+                  onChange={(v) => updateComponent(selectedComp.id, { startTime: Math.min(v, maxPlanDuration - 0.1) })}
                   unit="s"
                 />
                 <ScrubInput
                   label="End"
-                  value={selectedComp.endTime || 20}
+                  value={Math.min(selectedComp.endTime || maxPlanDuration, maxPlanDuration)}
                   min={0.1}
-                  max={20}
+                  max={maxPlanDuration}
                   step={0.1}
-                  onChange={(v) => updateComponent(selectedComp.id, { endTime: v })}
+                  onChange={(v) => updateComponent(selectedComp.id, { endTime: Math.min(v, maxPlanDuration) })}
                   unit="s"
                 />
               </div>
@@ -975,6 +983,14 @@ export const PropertiesPanel = () => {
                 />
               </div>
             )}
+
+            {/* Plan Telemetry & Scroll Completion */}
+            <div className="pt-2 border-t border-zinc-100">
+              <div className="flex items-center justify-between text-[11px] text-zinc-500 lowercase">
+                <span>telemetry tier</span>
+                <span className="font-mono text-zinc-800 font-medium">{planConfig.features.telemetry}</span>
+              </div>
+            </div>
           </div>
         )}
 

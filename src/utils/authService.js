@@ -114,10 +114,11 @@ const saveLocalSession = (session) => {
 /**
  * Sign up a new user
  */
-export async function signUpBuilder({ email, password, username, avatarSeed }) {
+export async function signUpBuilder({ email, password, username, avatarSeed, plan = 'pro' }) {
   const seed = avatarSeed || username || email.split('@')[0];
   const avatarUrl = getDiceBearVoxelBotAvatar(seed);
   const displayName = username || email.split('@')[0];
+  const activePlan = (plan || 'pro').toLowerCase();
 
   const client = getSupabaseClient();
 
@@ -129,7 +130,9 @@ export async function signUpBuilder({ email, password, username, avatarSeed }) {
         data: {
           username: displayName,
           avatarSeed: seed,
-          avatarUrl: avatarUrl
+          avatarUrl: avatarUrl,
+          plan: activePlan,
+          plan_updated_at: new Date().toISOString()
         }
       }
     });
@@ -142,6 +145,7 @@ export async function signUpBuilder({ email, password, username, avatarSeed }) {
       username: displayName,
       avatarSeed: seed,
       avatarUrl: avatarUrl,
+      plan: data.user?.user_metadata?.plan || activePlan,
       confirmed: Boolean(data.user?.confirmed_at || data.session)
     };
 
@@ -164,6 +168,7 @@ export async function signUpBuilder({ email, password, username, avatarSeed }) {
     username: displayName,
     avatarSeed: seed,
     avatarUrl: avatarUrl,
+    plan: activePlan,
     createdAt: new Date().toISOString()
   };
 
@@ -196,7 +201,8 @@ export async function signInBuilder({ email, password }) {
       email: data.user.email,
       username: metadata.username || email.split('@')[0],
       avatarSeed: seed,
-      avatarUrl: metadata.avatarUrl || getDiceBearVoxelBotAvatar(seed)
+      avatarUrl: metadata.avatarUrl || getDiceBearVoxelBotAvatar(seed),
+      plan: (metadata.plan || 'pro').toLowerCase()
     };
 
     saveLocalSession(user);
@@ -216,8 +222,55 @@ export async function signInBuilder({ email, password }) {
   if (!sessionUser.avatarUrl) {
     sessionUser.avatarUrl = getDiceBearVoxelBotAvatar(sessionUser.avatarSeed || sessionUser.username || cleanEmail);
   }
+  if (!sessionUser.plan) {
+    sessionUser.plan = 'pro';
+  }
   saveLocalSession(sessionUser);
   return sessionUser;
+}
+
+/**
+ * Update user plan in Supabase user metadata and local storage
+ */
+export async function updateUserPlan(planName) {
+  const cleanPlan = (planName || 'pro').toLowerCase();
+  const client = getSupabaseClient();
+
+  if (client) {
+    try {
+      const { data, error } = await client.auth.updateUser({
+        data: {
+          plan: cleanPlan,
+          plan_updated_at: new Date().toISOString()
+        }
+      });
+      if (error) {
+        console.warn('Supabase updateUserPlan notice:', error.message);
+      }
+    } catch (err) {
+      console.warn('Failed to update remote user metadata in Supabase:', err);
+    }
+  }
+
+  const currentSession = getLocalSession();
+  if (currentSession) {
+    const updated = {
+      ...currentSession,
+      plan: cleanPlan,
+      plan_updated_at: new Date().toISOString()
+    };
+    saveLocalSession(updated);
+
+    const users = getLocalUsers();
+    const updatedUsers = users.map((u) =>
+      u.email === updated.email ? { ...u, plan: cleanPlan } : u
+    );
+    saveLocalUsers(updatedUsers);
+
+    return updated;
+  }
+
+  return { plan: cleanPlan };
 }
 
 /**
@@ -252,7 +305,8 @@ export async function getCurrentBuilderUser() {
           email: user.email,
           username: metadata.username || user.email.split('@')[0],
           avatarSeed: seed,
-          avatarUrl: metadata.avatarUrl || getDiceBearVoxelBotAvatar(seed)
+          avatarUrl: metadata.avatarUrl || getDiceBearVoxelBotAvatar(seed),
+          plan: (metadata.plan || 'pro').toLowerCase()
         };
         saveLocalSession(sessionUser);
         return sessionUser;
@@ -262,5 +316,9 @@ export async function getCurrentBuilderUser() {
     }
   }
 
-  return getLocalSession();
+  const local = getLocalSession();
+  if (local && !local.plan) {
+    local.plan = 'pro';
+  }
+  return local;
 }

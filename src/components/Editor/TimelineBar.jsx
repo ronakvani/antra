@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
+import { useAuth } from '../../context/AuthContext';
+import { getMaxDurationForUser } from '../../utils/planFeatures';
 
 export const TimelineBar = () => {
   const {
@@ -13,6 +15,11 @@ export const TimelineBar = () => {
     selectedComponentId,
     setSelectedComponentId
   } = useEditor();
+  const { user } = useAuth();
+
+  const maxPlanDuration = getMaxDurationForUser(user);
+  const effectiveMaxDuration = Math.min(videoDuration || 15.0, maxPlanDuration);
+
   const trackRef = useRef(null);
   const isDraggingRef = useRef(false);
 
@@ -21,20 +28,20 @@ export const TimelineBar = () => {
     const rect = trackRef.current.getBoundingClientRect();
     const offsetX = Math.max(0, Math.min(clientX - rect.left, rect.width));
     const percentage = offsetX / rect.width;
-    const dur = videoDuration || 20.0;
+    const dur = effectiveMaxDuration;
     return parseFloat((percentage * dur).toFixed(2));
-  }, [videoDuration]);
+  }, [effectiveMaxDuration]);
 
   // Scrub click & drag handler
   const handleTrackMouseDown = (e) => {
     isDraggingRef.current = true;
     const newTime = calculateTimeFromClientX(e.clientX);
-    setCurrentTime(newTime);
+    setCurrentTime(Math.min(newTime, effectiveMaxDuration));
 
     const handleMouseMove = (moveEvent) => {
       if (!isDraggingRef.current) return;
       const scrubTime = calculateTimeFromClientX(moveEvent.clientX);
-      setCurrentTime(scrubTime);
+      setCurrentTime(Math.min(scrubTime, effectiveMaxDuration));
     };
 
     const handleMouseUp = () => {
@@ -67,7 +74,7 @@ export const TimelineBar = () => {
   }, [setIsPlaying]);
 
   const togglePlay = () => {
-    if (!isPlaying && currentTime >= (videoDuration || 20.0) - 0.1) {
+    if (!isPlaying && currentTime >= effectiveMaxDuration - 0.1) {
       setCurrentTime(0);
     }
     setIsPlaying(!isPlaying);
@@ -78,7 +85,7 @@ export const TimelineBar = () => {
     setCurrentTime(0);
   };
 
-  const durationSeconds = Math.max(1, Math.round(videoDuration || 10));
+  const durationSeconds = Math.max(1, Math.round(effectiveMaxDuration));
   const ticks = Array.from({ length: durationSeconds + 1 }, (_, i) => i);
 
   return (
@@ -99,9 +106,16 @@ export const TimelineBar = () => {
         >
           <RotateCcw className="w-4 h-4" />
         </button>
-        <span className="font-mono text-zinc-900 font-medium">
-          {currentTime.toFixed(1)}s / {(videoDuration || 20.0).toFixed(1)}s
-        </span>
+        <div className="flex flex-col font-mono text-zinc-900 text-xs">
+          <span className="font-medium">
+            {currentTime.toFixed(1)}s / {effectiveMaxDuration.toFixed(1)}s
+          </span>
+          {videoDuration > maxPlanDuration && (
+            <span className="text-[9px] text-[#E95464] lowercase font-sans">
+              plan capped: {maxPlanDuration}s max
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Timeline Scrub Track */}
@@ -114,9 +128,9 @@ export const TimelineBar = () => {
           {/* Interactive Component Spans */}
           <div className="absolute inset-0 z-10 flex items-center pointer-events-none">
             {manifest.components.map((c) => {
-              const dur = videoDuration || 20.0;
-              const startPct = (c.startTime / dur) * 100;
-              const widthPct = Math.max(2, ((c.endTime - c.startTime) / dur) * 100);
+              const dur = effectiveMaxDuration;
+              const startPct = Math.max(0, Math.min(100, (c.startTime / dur) * 100));
+              const widthPct = Math.max(2, Math.min(100 - startPct, ((Math.min(c.endTime, dur) - c.startTime) / dur) * 100));
               const isSelected = selectedComponentId === c.id;
 
               return (
@@ -128,7 +142,7 @@ export const TimelineBar = () => {
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   style={{ left: `${startPct}%`, width: `${widthPct}%` }}
-                  title={`${c.content || c.type} (${c.startTime}s - ${c.endTime}s)`}
+                  title={`${c.content || c.type} (${c.startTime}s - ${Math.min(c.endTime, dur)}s)`}
                   className={`absolute h-6 rounded-md border text-[10px] font-mono px-1.5 flex items-center justify-between transition cursor-pointer overflow-hidden pointer-events-auto ${
                     isSelected
                       ? 'bg-indigo-600/20 border-indigo-600 text-indigo-900 font-semibold shadow-xs z-20'
@@ -143,7 +157,7 @@ export const TimelineBar = () => {
 
           {/* Playhead */}
           <div
-            style={{ left: `${(currentTime / (videoDuration || 20.0)) * 100}%` }}
+            style={{ left: `${Math.min(100, (currentTime / effectiveMaxDuration) * 100)}%` }}
             className="absolute top-0 bottom-0 w-0.5 bg-zinc-900 z-20 shadow pointer-events-none"
           >
             <div className="w-2.5 h-2.5 bg-zinc-900 rounded-full -translate-x-[4px] -translate-y-1" />

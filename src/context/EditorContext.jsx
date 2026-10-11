@@ -7,16 +7,18 @@ const getInitialViewMode = () => {
   if (path === '/editor') return 'editor';
   if (path === '/preview') return 'preview';
   if (path === '/pricing') return 'pricing';
+  if (path === '/checkout') return 'checkout';
   return 'landing';
 };
 
 export const EditorProvider = ({ children }) => {
-  // Navigation View: 'landing' | 'editor' | 'preview' | 'pricing'
+  // Navigation View: 'landing' | 'editor' | 'preview' | 'pricing' | 'checkout'
   const [viewMode, setViewModeState] = useState(getInitialViewMode);
+  const [selectedPlan, setSelectedPlan] = useState('pro');
   
   const setViewMode = (mode) => {
     setViewModeState(mode);
-    const targetPath = mode === 'editor' ? '/editor' : mode === 'preview' ? '/preview' : mode === 'pricing' ? '/pricing' : '/';
+    const targetPath = mode === 'editor' ? '/editor' : mode === 'preview' ? '/preview' : mode === 'pricing' ? '/pricing' : mode === 'checkout' ? '/checkout' : '/';
     if (window.location.pathname !== targetPath) {
       window.history.pushState({ mode }, '', targetPath);
     }
@@ -28,6 +30,7 @@ export const EditorProvider = ({ children }) => {
       if (path === '/editor') setViewModeState('editor');
       else if (path === '/preview') setViewModeState('preview');
       else if (path === '/pricing') setViewModeState('pricing');
+      else if (path === '/checkout') setViewModeState('checkout');
       else setViewModeState('landing');
     };
     window.addEventListener('popstate', handlePopState);
@@ -36,9 +39,14 @@ export const EditorProvider = ({ children }) => {
 
   // Video Source (default to antra-gradient.mp4 if present or null)
   const [videoSrc, setVideoSrc] = useState('/antra-gradient.mp4');
-  const [videoDuration, setVideoDuration] = useState(20.0);
+  const [videoDuration, setVideoDuration] = useState(15.0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Remotion Motion Graphics Engine State
+  const [remotionCode, setRemotionCode] = useState('');
+  const [isRemotion, setIsRemotion] = useState(false);
+  const [remotionFps, setRemotionFps] = useState(30);
 
   // Reference Images & Prompt state for video generation
   const [referenceImages, setReferenceImages] = useState([]);
@@ -146,6 +154,8 @@ export const EditorProvider = ({ children }) => {
       value={{
         viewMode,
         setViewMode,
+        selectedPlan,
+        setSelectedPlan,
         videoSrc,
         setVideoSrc,
         videoDuration,
@@ -154,6 +164,12 @@ export const EditorProvider = ({ children }) => {
         setCurrentTime,
         isPlaying,
         setIsPlaying,
+        remotionCode,
+        setRemotionCode,
+        isRemotion,
+        setIsRemotion,
+        remotionFps,
+        setRemotionFps,
         referenceImages,
         setReferenceImages,
         promptText,

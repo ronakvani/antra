@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useEditor } from '../../context/EditorContext';
 import { ArrowLeft } from 'lucide-react';
 import { VideoJsPlayer } from '../Common/VideoJsPlayer';
+import { RemotionViewer } from '../Common/RemotionViewer';
 import { computeOpenReelMotionState } from '../../utils/openreelAnimationEngine';
 import { getPenpotNodeLayoutStyle } from '../../utils/penpotCodeEngine';
 import { PenpotComponentRenderer } from '../Editor/PenpotComponentRenderer';
@@ -10,10 +11,10 @@ const BASE_WIDTH = 1920;
 const BASE_HEIGHT = 1080;
 
 export const ScrollViewer = () => {
-  const { videoSrc, manifest, setViewMode } = useEditor();
+  const { videoSrc, remotionCode, isRemotion, remotionFps, videoDuration, manifest, setViewMode } = useEditor();
   const containerRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(20.0);
+  const [duration, setDuration] = useState(videoDuration || 15.0);
 
   // References for smooth Lerp (Linear Interpolation) physics loop
   const targetTimeRef = useRef(0);
@@ -88,13 +89,24 @@ export const ScrollViewer = () => {
 
       {/* Edge-to-Edge Fullscreen Visual Web Viewport (Zero Black Borders) */}
       <div className="fixed inset-0 w-full h-full bg-black overflow-hidden select-none">
-        {/* Media Layer: Fullscreen Object-Cover Video */}
-        <VideoJsPlayer
-          src={videoSrc}
-          currentTime={currentTime}
-          onLoadedMetadata={(dur) => setDuration(dur || 20.0)}
-          className="w-full h-full object-cover pointer-events-none"
-        />
+        {/* Media Layer: Fullscreen Remotion Motion Graphics or Video */}
+        {isRemotion && remotionCode ? (
+          <RemotionViewer
+            code={remotionCode}
+            currentTime={currentTime}
+            isPlaying={false}
+            duration={duration}
+            fps={remotionFps || 30}
+            className="w-full h-full object-cover pointer-events-none"
+          />
+        ) : (
+          <VideoJsPlayer
+            src={videoSrc}
+            currentTime={currentTime}
+            onLoadedMetadata={(dur) => setDuration(dur || 20.0)}
+            className="w-full h-full object-cover pointer-events-none"
+          />
+        )}
 
         {/* Dynamic Web Component Overlay Layer */}
         <div className="absolute inset-0 pointer-events-auto z-30">

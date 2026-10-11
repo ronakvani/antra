@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useEditor } from '../../context/EditorContext';
 import { VideoJsPlayer } from '../Common/VideoJsPlayer';
+import { RemotionViewer } from '../Common/RemotionViewer';
 import { RotateCw, Lock } from 'lucide-react';
 import { computeOpenReelMotionState } from '../../utils/openreelAnimationEngine';
 import { getPenpotNodeLayoutStyle } from '../../utils/penpotCodeEngine';
@@ -9,6 +10,10 @@ import { PenpotComponentRenderer } from './PenpotComponentRenderer';
 export const VideoCanvas = () => {
   const {
     videoSrc,
+    remotionCode,
+    isRemotion,
+    remotionFps,
+    videoDuration,
     currentTime,
     setCurrentTime,
     isPlaying,
@@ -263,8 +268,19 @@ export const VideoCanvas = () => {
         ref={canvasRef}
         className="relative w-full aspect-video max-h-full max-w-full bg-black border border-zinc-300 rounded-2xl shadow-xl overflow-hidden flex items-center justify-center isolate select-none"
       >
-        {/* Media Layer (Video.js powered) */}
-        {videoSrc ? (
+        {/* Media Layer (Remotion AI Motion Graphics or Video.js) */}
+        {isRemotion && remotionCode ? (
+          <RemotionViewer
+            code={remotionCode}
+            currentTime={currentTime}
+            isPlaying={isPlaying}
+            duration={videoDuration}
+            fps={remotionFps || 30}
+            onTimeUpdate={(t) => setCurrentTime(t)}
+            onEnded={() => setIsPlaying(false)}
+            className="w-full h-full object-cover pointer-events-none"
+          />
+        ) : videoSrc ? (
           <VideoJsPlayer
             src={videoSrc}
             currentTime={currentTime}

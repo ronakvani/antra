@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@babel/standalone": "^7.29.9",
     "@dicebear/collection": "^9.4.2",
     "@dicebear/core": "^9.4.3",
     "@dicebear/styles": "^10.6.0",
@@ -17,11 +18,14 @@
     "@ffmpeg/util": "^0.12.2",
     "@penpot/library": "^1.2.0-RC2",
     "@penpot/plugin-styles": "^1.4.2",
+    "@remotion/player": "^4.0.532",
     "@supabase/supabase-js": "^2.117.2",
     "grapesjs": "^0.21.10",
     "lucide-react": "^0.475.0",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "remotion": "^4.0.532",
     "video.js": "^8.24.1"
   },
   "devDependencies": {

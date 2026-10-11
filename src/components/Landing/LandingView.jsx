@@ -1,21 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowUp, ArrowRight, Sparkles, X, Plus, Loader2 } from 'lucide-react';
+import { ArrowUp, ArrowRight, Sparkles, X, Plus, Loader2, Timer } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
+import { useAuth } from '../../context/AuthContext';
 import { LandingGradient } from './LandingGradient';
 import { BuilderAuthHeader } from './BuilderAuthHeader';
-import { generateAntraVideo } from '../../utils/higgsfieldVideoEngine';
 import { transcodeToAllIntra } from '../../utils/videoTranscodingEngine';
+import { getMaxDurationForUser } from '../../utils/planFeatures';
+import { generateRemotionMotionVideo } from '../../utils/remotionAiEngine';
+import { createGrapesComponentRecord } from '../../utils/grapesEngine';
 
 export const LandingView = () => {
   const {
     setViewMode,
     setVideoSrc,
     setVideoDuration,
+    setRemotionCode,
+    setIsRemotion,
+    setRemotionFps,
     referenceImages,
     setReferenceImages,
     promptText,
-    setPromptText
+    setPromptText,
+    manifest,
+    setManifest
   } = useEditor();
+  const { user } = useAuth();
+  const maxPlanDuration = getMaxDurationForUser(user);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
@@ -73,12 +83,16 @@ export const LandingView = () => {
         });
 
         setVideoSrc(transcodeResult.videoUrl);
+        setIsRemotion(false);
+        setRemotionCode('');
         setReferenceImages([]);
         setViewMode('editor');
       } catch (err) {
         console.error('Video upload transcode error:', err);
         const fallbackUrl = URL.createObjectURL(file);
         setVideoSrc(fallbackUrl);
+        setIsRemotion(false);
+        setRemotionCode('');
         setReferenceImages([]);
         setViewMode('editor');
       } finally {
@@ -116,37 +130,95 @@ export const LandingView = () => {
     setReferenceImages((prev) => prev.filter((img) => img.id !== id));
   };
 
-  const handleAIProceed = async () => {
-    if (!promptText.trim() && referenceImages.length === 0) return;
+  const handleProceed = async () => {
+    const rawText = promptText.trim();
     setIsGenerating(true);
-    setGenerationStatus('Compiling Antra System Prompt...');
+    setGenerationStatus('Initiating Remotion Motion AI engine...');
 
     try {
-      // Step 1: Synthesize AI Video via Higgsfield Wan 3.0
-      const result = await generateAntraVideo({
-        prompt: promptText,
-        referenceImages,
+      const result = await generateRemotionMotionVideo({
+        prompt: rawText || 'Interactive modern digital landscape with floating architectural elements',
+        user,
         onProgress: ({ message }) => {
           setGenerationStatus(message);
         }
       });
 
-      if (result?.videoUrl) {
-        // Step 2: Pass generated video through All-Intra FFmpeg Transcoder
-        setGenerationStatus('Optimizing AI video: Transcoding every frame to Keyframe (I-Frame)...');
-        const transcodeResult = await transcodeToAllIntra({
-          url: result.videoUrl,
-          onProgress: ({ message }) => {
-            setGenerationStatus(message);
-          }
-        });
-
-        setVideoSrc(transcodeResult.videoUrl);
-        setVideoDuration(result.duration || 10.0);
+      if (result?.code) {
+        setRemotionCode(result.code);
+        setIsRemotion(true);
+        setVideoDuration(result.duration || 15.0);
+        setRemotionFps(result.fps || 30);
       }
+
+      // Auto-populate interactive overlay layers matching the prompt's theme
+      const theme = result?.theme;
+      if (theme && (!manifest?.components || manifest.components.length === 0)) {
+        const starterLayers = [
+          {
+            id: `comp_${Date.now()}_badge`,
+            type: 'badge',
+            content: `★ ${theme.badgeText || 'INTERACTIVE EXPERIENCE'}`,
+            startTime: 0,
+            endTime: result?.duration || 15.0,
+            animationIn: 'fade-in',
+            animationOut: 'fade-out',
+            animationDuration: 0.6,
+            style: {
+              fontFamily: "'Belanosima', sans-serif",
+              fontSize: '13px',
+              fontWeight: '600',
+              color: theme.primaryColor || '#E95464',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              border: `1px solid ${theme.primaryColor || '#E95464'}40`,
+              borderRadius: '9999px',
+              padding: '6px 16px',
+              left: '50%',
+              top: '12%',
+              transform: 'translateX(-50%)',
+              backdropFilter: 'blur(12px)'
+            },
+            ...createGrapesComponentRecord('badge', `★ ${theme.badgeText || 'INTERACTIVE EXPERIENCE'}`)
+          },
+          {
+            id: `comp_${Date.now()}_cta`,
+            type: 'button',
+            content: theme.category === 'fitness' ? 'Start Free Workout →' : theme.category === 'fintech' ? 'Launch App →' : 'Explore Platform →',
+            targetUrl: 'https://antra.website',
+            startTime: 0.5,
+            endTime: result?.duration || 15.0,
+            animationIn: 'scale-up',
+            animationOut: 'fade-out',
+            animationDuration: 0.7,
+            style: {
+              fontFamily: "'Belanosima', sans-serif",
+              fontSize: '15px',
+              fontWeight: '700',
+              color: '#FFFFFF',
+              backgroundColor: theme.primaryColor || '#E95464',
+              borderRadius: '14px',
+              padding: '12px 28px',
+              left: '50%',
+              top: '80%',
+              transform: 'translateX(-50%)',
+              boxShadow: `0 8px 24px ${theme.primaryColor || '#E95464'}55`,
+              cursor: 'pointer'
+            },
+            ...createGrapesComponentRecord('button', theme.category === 'fitness' ? 'Start Free Workout →' : theme.category === 'fintech' ? 'Launch App →' : 'Explore Platform →', 'https://antra.website')
+          }
+        ];
+
+        setManifest((prev) => ({
+          ...prev,
+          title: `${theme.brandName || 'Antra'} Interactive Experience`,
+          components: starterLayers
+        }));
+      }
+
       setViewMode('editor');
     } catch (err) {
-      console.error('AI generation pipeline error:', err);
+      console.error('Remotion motion generation error:', err);
+      setViewMode('editor');
     } finally {
       setIsGenerating(false);
       setGenerationStatus('');
@@ -176,23 +248,38 @@ export const LandingView = () => {
           {showMenu && (
             <div
               ref={menuRef}
-              className="absolute top-full left-0 mt-3 w-[270px] sm:w-[290px] bg-white border border-zinc-900 rounded-[22px] shadow-2xl p-4 text-left z-30 animate-in fade-in slide-in-from-top-2 duration-150"
+              className="absolute top-full left-0 mt-3 w-[285px] sm:w-[315px] bg-white border border-zinc-900 rounded-[22px] shadow-2xl p-3.5 sm:p-4 text-left z-30 animate-in fade-in slide-in-from-top-2 duration-150"
             >
-              {/* Option 1: Reference Images */}
-              <button
-                type="button"
-                onClick={() => {
-                  imageInputRef.current?.click();
-                }}
-                className="w-full text-left p-2 rounded-xl hover:bg-zinc-100 transition-colors group cursor-pointer block"
-              >
-                <div className="text-[13px] font-medium text-zinc-400 group-hover:text-zinc-500">
-                  reference
+              {/* Option 1: Reference Images (Coming Soon in Pro Mode) */}
+              <div className="relative group/opt1">
+                <div
+                  className="w-full text-left p-2 rounded-xl flex items-center justify-between gap-3 opacity-60 cursor-not-allowed select-none bg-transparent hover:bg-zinc-50/50 transition-colors"
+                  title="Reference-to-video is coming soon in Pro mode. In v1, please upload a source video."
+                >
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium text-zinc-400">
+                      reference
+                    </div>
+                    <div className="text-base sm:text-[17px] font-bold text-zinc-950 tracking-tight leading-snug whitespace-nowrap">
+                      upload images (max 5)
+                    </div>
+                  </div>
+                  <div
+                    className="p-1 text-zinc-400 flex items-center justify-center shrink-0"
+                  >
+                    <Timer className="w-5 h-5" />
+                  </div>
                 </div>
-                <div className="text-base sm:text-[19px] font-bold text-zinc-950 group-hover:text-black tracking-tight leading-snug">
-                  upload images (max 5)
+
+                {/* Tooltip Card on Hover */}
+                <div className="absolute left-0 top-full mt-1 hidden group-hover/opt1:flex flex-col w-64 p-2.5 bg-zinc-900 text-white text-xs rounded-xl shadow-2xl z-50 pointer-events-none animate-in fade-in duration-150">
+                  <span className="font-semibold text-zinc-100 lowercase">reference images (pro mode)</span>
+                  <span className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed lowercase">
+                    reference-to-video is coming soon in pro mode. in v1, please use the source video option below.
+                  </span>
+                  <div className="absolute -top-1 left-6 w-2 h-2 bg-zinc-900 rotate-45" />
                 </div>
-              </button>
+              </div>
 
               {/* Divider line */}
               <div className="my-2 border-t border-zinc-900" />
@@ -208,7 +295,7 @@ export const LandingView = () => {
                 <div className="text-[13px] font-medium text-zinc-400 group-hover:text-zinc-500">
                   source video
                 </div>
-                <div className="text-base sm:text-[19px] font-bold text-zinc-950 group-hover:text-black tracking-tight leading-snug">
+                <div className="text-base sm:text-[17px] font-bold text-zinc-950 group-hover:text-black tracking-tight leading-snug whitespace-nowrap">
                   upload video (max 1, 10s)
                 </div>
               </button>
@@ -238,7 +325,7 @@ export const LandingView = () => {
             {/* Reference Images Thumbnails Preview (if attached via Option 1) */}
             {referenceImages.length > 0 && (
               <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 overflow-x-auto">
-                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider shrink-0">
+                <span className="text-xs font-semibold text-zinc-400 lowercase tracking-wider shrink-0">
                   Ref Images ({referenceImages.length}/5):
                 </span>
                 {referenceImages.map((img) => (
@@ -280,41 +367,56 @@ export const LandingView = () => {
                 type="button"
                 onClick={() => setShowMenu(!showMenu)}
                 title="Choose source option"
-                className={`p-1.5 text-zinc-900 hover:bg-zinc-100 rounded-xl transition flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                className={`p-1.5 text-zinc-900 hover:bg-zinc-100 rounded-xl transition flex items-center justify-center flex-shrink-0 mt-0.5 cursor-pointer ${
                   showMenu ? 'bg-zinc-100' : ''
                 }`}
               >
                 <ArrowUp className="w-6 h-6 stroke-[2.5]" />
               </button>
 
-              {/* Text Area (Shift+Enter for newline, Enter to submit, expands downwards) */}
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                value={promptText}
-                onChange={(e) => setPromptText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleAIProceed();
-                  }
-                }}
-                placeholder="create your interactive website with..."
-                className="flex-1 bg-transparent text-zinc-950 placeholder-zinc-500 focus:outline-none text-xl sm:text-[24px] font-normal resize-none leading-normal py-0.5 max-h-[220px] overflow-y-auto"
-              />
+              {/* Text Area (Disabled for v1 - Coming soon in Pro mode) */}
+              <div
+                className="flex-1 min-w-0 cursor-not-allowed"
+                title="Text-to-video AI prompt is coming soon in Pro mode. In v1, please upload a source video."
+              >
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  disabled
+                  value=""
+                  readOnly
+                  placeholder="create your interactive website with..."
+                  className="w-full bg-transparent text-zinc-950 placeholder-zinc-400 focus:outline-none text-xl sm:text-[24px] font-normal resize-none leading-normal py-0.5 max-h-[220px] overflow-y-auto cursor-not-allowed select-none"
+                />
+              </div>
 
-              {/* Right Arrow Proceed Button */}
+              {/* Coming Soon Timer Icon with Tooltip */}
+              <div className="relative group/prompt-timer flex items-center justify-center">
+                <div
+                  title="Text-to-video is coming soon in Pro mode. In v1, please upload a source video."
+                  className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-xl transition flex items-center justify-center flex-shrink-0 mt-0.5 cursor-not-allowed"
+                >
+                  <Timer className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+
+                {/* Tooltip Card */}
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover/prompt-timer:flex flex-col w-64 p-2.5 bg-zinc-900 text-white text-xs rounded-xl shadow-2xl z-50 pointer-events-none animate-in fade-in duration-150">
+                  <span className="font-semibold text-zinc-100 lowercase">text-to-video (pro mode)</span>
+                  <span className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed lowercase">
+                    prompt generation is coming soon in pro mode. in v1, please upload a source video using the arrow on the left.
+                  </span>
+                  <div className="absolute -bottom-1 right-4 w-2 h-2 bg-zinc-900 rotate-45" />
+                </div>
+              </div>
+
+              {/* Right Arrow Proceed Button (Disabled) */}
               <button
                 type="button"
-                onClick={handleAIProceed}
-                disabled={isGenerating}
-                className="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition flex items-center justify-center flex-shrink-0 shadow-md mt-0.5 cursor-pointer disabled:opacity-75"
+                disabled
+                className="p-2.5 bg-zinc-200 text-zinc-400 rounded-xl flex items-center justify-center flex-shrink-0 shadow-none mt-0.5 cursor-not-allowed select-none"
+                title="Prompt generation is coming soon in Pro mode. In v1, please upload a source video."
               >
-                {isGenerating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="w-4 h-4" />
-                )}
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
