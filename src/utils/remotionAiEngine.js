@@ -12,19 +12,16 @@ import * as LucideIcons from 'lucide-react';
 import { getMaxDurationForUser } from './planFeatures.js';
 import { SYSTEM_PROMPT, REMOTION_SKILL } from '../prompts/index.js';
 
+// Currently active free-tier models on OpenRouter with zero-cost access and high rate limits
 export const OPENROUTER_MODELS = {
-  OPENROUTER_FREE: 'openrouter/free',
-  GEMINI_FLASH: 'google/gemini-2.5-flash',
-  GEMINI_FLASH_001: 'google/gemini-2.0-flash-001',
-  INKLING_SMALL: 'thinkingmachines/inkling-small:free',
-  QWEN_FREE: 'qwen/qwen3.8-27b:free',
-  NVIDIA_SUPER_FREE: 'nvidia/nemotron-3-super-120b-a12b:free',
-  LLAMA_70B: 'meta-llama/llama-3.3-70b-instruct',
-  DEEPSEEK_CHAT: 'deepseek/deepseek-chat',
-  GEMMA_FREE: 'google/gemma-4-31b-it:free'
+  COHERE_CODE_FREE: 'cohere/north-mini-code:free',
+  LING_FLASH_FREE: 'inclusionai/ling-3.2-flash:free',
+  LIQUID_FREE: 'liquid/lfm-3-1.7b:free',
+  NEMOTRON_VL_FREE: 'nvidia/nemotron-3.5-super-vl:free',
+  OPENROUTER_FREE: 'openrouter/free'
 };
 
-export const DEFAULT_OPENROUTER_MODEL = OPENROUTER_MODELS.OPENROUTER_FREE;
+export const DEFAULT_OPENROUTER_MODEL = OPENROUTER_MODELS.COHERE_CODE_FREE;
 
 /**
  * Builds the comprehensive prompt combining systemprompt.md and remotionSkill.md
@@ -43,8 +40,32 @@ RUNTIME SPECIFICATIONS FOR THIS GENERATION
 - Canvas Resolution: 1920x1080 (16:9 widescreen)
 - Target Duration: ${durationSeconds} seconds (${durationInFrames} frames at ${fps} FPS).
 - Component Signature: function MotionScene()
-- REMINDER: STRICTLY NO BUTTONS OR CLICKABLE CONTROLS INSIDE THE VIDEO CODE.
+- CRITICAL REMINDER: STRICTLY NO BUTTONS, CLICKABLES, OR FORM INPUTS INSIDE THE VIDEO CODE.
+- SYNTAX REMINDER: Enclose all style transforms containing \${...} in backticks (\`...\`).
 - Return ONLY clean, executable React component code.`;
+};
+
+/**
+ * Cleanly extracts a meaningful brand/topic title from user prompt text
+ */
+const extractMeaningfulTitle = (rawPrompt = '') => {
+  const p = (rawPrompt || '').trim();
+  if (!p) return 'ANTRA STUDIO';
+
+  // Strip common filler conversational prefixes
+  const clean = p
+    .replace(/^(my business is|we are|we provide|our product is|create a video for|making video explain|explain|make a website for|generate video for)\s+/gi, '')
+    .trim();
+
+  // If there's an obvious domain keyword (e.g., SEO, AI, Analytics, Fitness)
+  if (/seo/i.test(clean)) return 'AI-POWERED SEO';
+  if (/crypto|fintech|trading/i.test(clean)) return 'NEXUS PROTOCOL';
+  if (/fitness|gym|workout/i.test(clean)) return 'PULSE FITNESS';
+  if (/luxury|fashion/i.test(clean)) return 'AURA ATELIER';
+  if (/cyber|security/i.test(clean)) return 'SENTINEL DEFENSE';
+
+  const words = clean.split(/\s+/).filter(Boolean);
+  return words.length > 0 ? words.slice(0, 3).join(' ').toUpperCase() : 'ANTRA STUDIO';
 };
 
 /**
@@ -58,8 +79,7 @@ export const generateProceduralRemotionCode = ({
   durationSeconds = 15,
   fps = 30
 }) => {
-  const words = (prompt || 'Antra Motion Backdrop').trim().split(/\s+/).filter(Boolean);
-  const brandTitle = words.length > 0 ? words.slice(0, 3).join(' ').toUpperCase() : 'ANTRA STUDIO';
+  const brandTitle = extractMeaningfulTitle(prompt);
 
   return `function MotionScene() {
   const frame = useCurrentFrame();
@@ -143,7 +163,7 @@ export const generateProceduralRemotionCode = ({
       >
         <Sparkles className="w-3.5 h-3.5 text-[#E95464] animate-pulse" />
         <span className="text-[11px] font-mono tracking-widest uppercase text-zinc-300">
-          MOTION CANVAS · INTERACTIVE CORE
+          MOTION CANVAS · NEXT-GEN INTELLIGENCE
         </span>
       </div>
 
@@ -195,8 +215,8 @@ export const generateProceduralRemotionCode = ({
             <Zap className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-mono uppercase text-zinc-400 leading-tight">Motion Core</div>
-            <div className="text-xl font-bold text-white tracking-tight">60 FPS Smooth</div>
+            <div className="text-[11px] font-mono uppercase text-zinc-400 leading-tight">Engine Core</div>
+            <div className="text-xl font-bold text-white tracking-tight">AI Driven</div>
           </div>
         </div>
 
@@ -228,7 +248,7 @@ export const generateProceduralRemotionCode = ({
           </div>
           <div>
             <div className="text-[11px] font-mono uppercase text-zinc-400 leading-tight">Interaction</div>
-            <div className="text-xl font-bold text-white tracking-tight">DOM Layer Ready</div>
+            <div className="text-xl font-bold text-white tracking-tight">DOM Ready</div>
           </div>
         </div>
       </div>
@@ -274,17 +294,22 @@ export const generateRemotionMotionVideo = async ({
 
   // Attempt real OpenRouter API call if key is available
   if (resolvedApiKey) {
-    const candidateModels = [
-      model,
-      OPENROUTER_MODELS.OPENROUTER_FREE,
-      OPENROUTER_MODELS.GEMINI_FLASH,
-      OPENROUTER_MODELS.GEMINI_FLASH_001,
-      OPENROUTER_MODELS.INKLING_SMALL,
-      OPENROUTER_MODELS.QWEN_FREE,
-      OPENROUTER_MODELS.NVIDIA_SUPER_FREE,
-      OPENROUTER_MODELS.LLAMA_70B,
-      OPENROUTER_MODELS.DEEPSEEK_CHAT
-    ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+    const hasImages = Array.isArray(images) && images.some((img) => img.base64 || img.dataUrl);
+
+    // If images are provided, prioritize models that support image input
+    const candidateModels = hasImages
+      ? [
+          OPENROUTER_MODELS.LING_FLASH_FREE,
+          OPENROUTER_MODELS.NEMOTRON_VL_FREE,
+          OPENROUTER_MODELS.OPENROUTER_FREE
+        ]
+      : [
+          model || OPENROUTER_MODELS.COHERE_CODE_FREE,
+          OPENROUTER_MODELS.COHERE_CODE_FREE,
+          OPENROUTER_MODELS.LING_FLASH_FREE,
+          OPENROUTER_MODELS.LIQUID_FREE,
+          OPENROUTER_MODELS.OPENROUTER_FREE
+        ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
     // Build user message content supporting multi-modal design images
     const userMessageContent = [];
@@ -299,7 +324,8 @@ Instructions:
 1. Generate the Remotion React component \`MotionScene()\` that visually tells the story of this product/business.
 2. If design images are attached, extract their color palette, typography styling, and branding atmosphere.
 3. REMEMBER: DO NOT INCLUDE BUTTONS OR CLICKABLE CONTROLS in the video code. This video is strictly the visual background backdrop.
-4. Return ONLY runnable React component code.`;
+4. SYNTAX RULE: When writing inline style={{ transform: ... }}, wrap strings containing \${...} in backticks: style={{ transform: \`scale(\${scale})\` }}
+5. Return ONLY runnable React component code.`;
 
     userMessageContent.push({
       type: 'text',
@@ -307,7 +333,7 @@ Instructions:
     });
 
     // Append base64 design reference images if provided
-    if (Array.isArray(images) && images.length > 0) {
+    if (hasImages) {
       for (const img of images) {
         if (img.base64 || img.dataUrl) {
           userMessageContent.push({
@@ -328,8 +354,12 @@ Instructions:
           message: `Synthesizing Remotion motion graphics with ${currentModel}...`
         });
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout per candidate
+
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
+          signal: controller.signal,
           headers: {
             Authorization: `Bearer ${resolvedApiKey}`,
             'Content-Type': 'application/json',
@@ -345,12 +375,14 @@ Instructions:
               },
               {
                 role: 'user',
-                content: images.length > 0 ? userMessageContent : userInstructions
+                content: hasImages ? userMessageContent : userInstructions
               }
             ],
             temperature: 0.7
           })
         });
+
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           const data = await response.json();
@@ -434,7 +466,7 @@ const SafeLucideIcons = new Proxy(LucideIcons, {
     if (typeof prop === 'string' && prop in target) {
       return target[prop];
     }
-    return target.Sparkles || target.Activity || (() => null);
+    return target.Sparkles || target.Activity || target.Zap || (() => null);
   }
 });
 
@@ -462,18 +494,28 @@ export const compileRemotionCode = (codeString) => {
       cleanCode = cleanCode.replace(/export\s+/g, '');
     }
 
-    // 3. Transform JSX using Babel Standalone
+    // 3. Auto-fix unquoted template strings in style props (e.g. style={{ transform: scale(${s}) }})
+    cleanCode = cleanCode.replace(/style=\{\{([^}]+)\}\}/g, (match, body) => {
+      // Look for prop: unquoted_with_dollar_curly
+      const fixedBody = body.replace(/([a-zA-Z0-9_-]+)\s*:\s*([^'"`,\n]+\$\{[^}]+\}[^'"`,\n]*)/g, (m, prop, val) => {
+        return `${prop}: \`${val.trim()}\``;
+      });
+      return `style={{${fixedBody}}}`;
+    });
+
+    // 4. Transform JSX using Babel Standalone
     const transformed = Babel.transform(cleanCode, {
       presets: ['react'],
       filename: 'remotionScene.jsx'
     }).code;
 
-    // 4. Construct comprehensive sandbox scope with injected Remotion hooks, React, and Lucide Icons
+    // 5. Construct comprehensive sandbox scope with injected Remotion hooks, React, and Lucide Icons
     const sandboxScope = {
       React,
       ...React,
       Remotion,
       ...Remotion,
+      AbsoluteFill: Remotion.AbsoluteFill || (({ children, style, className }) => React.createElement('div', { style: { position: 'absolute', inset: 0, ...style }, className }, children)),
       LucideIcons: SafeLucideIcons,
       ...SafeLucideIcons,
       durationSeconds: 15,
@@ -484,26 +526,28 @@ export const compileRemotionCode = (codeString) => {
     const argNames = Object.keys(sandboxScope);
     const argValues = Object.values(sandboxScope);
 
-    // 5. Inject destructured icon bindings and hooks so JSX tag names work directly
+    // 6. Inject destructured icon bindings and hooks so JSX tag names work directly
     const hookInjects = `
       const useCurrentFrame = Remotion?.useCurrentFrame || React.useContext;
       const useVideoConfig = Remotion?.useVideoConfig || (() => ({ fps: 30, durationInFrames: 450, width: 1920, height: 1080 }));
       const interpolate = Remotion?.interpolate || ((val, inR, outR) => (Array.isArray(outR) ? outR[0] : 0));
       const spring = Remotion?.spring || (() => 1);
-      const Easing = Remotion?.Easing || { bezier: () => () => 1, ease: () => 1 };
+      const Easing = Remotion?.Easing || { bezier: () => () => 1, ease: () => 1, inOut: () => () => 1 };
       const Sequence = Remotion?.Sequence || (({ children }) => children);
       const Img = Remotion?.Img || (props => React.createElement('img', props));
+      const AbsoluteFill = Remotion?.AbsoluteFill || (({ children, style, className }) => React.createElement('div', { style: { position: 'absolute', inset: 0, ...style }, className }, children));
       const interpolateColors = Remotion?.interpolateColors || (() => '#ffffff');
       const { useState, useEffect, useMemo, useRef, useCallback } = React;
       const {
         Flame, Activity, Zap, Sparkles, Trophy, Dumbbell, Heart, TrendingUp,
         ArrowRight, ChevronRight, Shield, Layers, Code, Globe, Star, Check,
         CheckCircle, Play, Pause, Clock, Compass, Sliders, Smartphone, Laptop,
-        CreditCard, BarChart2, BarChart, Cpu, Wifi, Eye, RefreshCw, Radio, Target
+        CreditCard, BarChart2, BarChart, Cpu, Wifi, Eye, RefreshCw, Radio, Target,
+        Search, AlertCircle
       } = LucideIcons;
     `;
 
-    // 6. Return evaluated component function
+    // 7. Return evaluated component function
     const factory = new Function(
       ...argNames,
       `

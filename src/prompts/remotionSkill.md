@@ -12,6 +12,7 @@ You have direct access to:
 - **React**:
   - `useState`, `useEffect`, `useMemo`, `useRef`, `useCallback`
 - **Remotion**:
+  - `AbsoluteFill`: Full-canvas absolute fill container.
   - `useCurrentFrame()`: Returns the current integer frame index (starts at 0).
   - `useVideoConfig()`: Returns `{ fps, durationInFrames, width, height }` (standard 1920x1080 canvas).
   - `interpolate(frame, inputRange, outputRange, options)`: Smooth mapping with easing/clamping.
@@ -20,11 +21,14 @@ You have direct access to:
   - `Sequence`: `<Sequence from={frame} durationInFrames={length}>` for time-sliced staging.
   - `interpolateColors(frame, inputRange, outputRange)`: Color hex interpolation.
 - **Lucide Icons** (`SafeLucideIcons`):
-  - Common icons available directly by tag name: `Sparkles`, `Activity`, `Flame`, `Zap`, `Shield`, `TrendingUp`, `Cpu`, `Layers`, `Globe`, `Star`, `Compass`, `Radio`, `Eye`, etc.
+  - Common icons available directly by tag name: `Sparkles`, `Activity`, `Flame`, `Zap`, `Shield`, `TrendingUp`, `Cpu`, `Layers`, `Globe`, `Star`, `Compass`, `Radio`, `Eye`, `Search`, `BarChart`, `Check`, etc.
   - If an icon name doesn't exist, a safe fallback is rendered automatically.
 - **Styling**:
   - Tailwind CSS utility classes are available (e.g. `flex flex-col items-center justify-center text-white relative overflow-hidden`).
   - Inline `style={{ ... }}` for dynamic frame-driven transforms, opacities, rotations, and gradients.
+  - **CRITICAL JSX SYNTAX RULE**: Any dynamic CSS value using `${...}` MUST be inside template literals with backticks:
+    - CORRECT: `style={{ transform: \`scale(\${cameraScale}) translateY(\${floatY}px)\` }}`
+    - INCORRECT: `style={{ transform: scale(${cameraScale}) translateY(${floatY}px) }}` (This causes a syntax error!)
 
 ---
 
