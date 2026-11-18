@@ -12,12 +12,12 @@ import * as LucideIcons from 'lucide-react';
 import { getMaxDurationForUser } from './planFeatures.js';
 import { SYSTEM_PROMPT, REMOTION_SKILL } from '../prompts/index.js';
 
-// Currently active free-tier models on OpenRouter with zero-cost access and high rate limits
+// Currently active free-tier models on OpenRouter with verified live availability
 export const OPENROUTER_MODELS = {
   COHERE_CODE_FREE: 'cohere/north-mini-code:free',
   LING_FLASH_FREE: 'inclusionai/ling-3.2-flash:free',
-  LIQUID_FREE: 'liquid/lfm-3-1.7b:free',
   NEMOTRON_VL_FREE: 'nvidia/nemotron-3.5-super-vl:free',
+  PARTICLE_FREE: 'particle-ai/particle-1:free',
   OPENROUTER_FREE: 'openrouter/free'
 };
 
@@ -30,48 +30,95 @@ export const buildCompositeSystemPrompt = ({ durationInFrames, durationSeconds, 
   return `${SYSTEM_PROMPT}
 
 ==============================
-REMOTION EXPERT SKILL & BEST PRACTICES
+REMOTION MOTION DESIGN DIRECTIVES
 ==============================
 ${REMOTION_SKILL}
 
 ==============================
-RUNTIME SPECIFICATIONS FOR THIS GENERATION
+RUNTIME SPECIFICATIONS
 ==============================
-- Canvas Resolution: 1920x1080 (16:9 widescreen)
-- Target Duration: ${durationSeconds} seconds (${durationInFrames} frames at ${fps} FPS).
-- Component Signature: function MotionScene()
-- CRITICAL REMINDER: STRICTLY NO BUTTONS, CLICKABLES, OR FORM INPUTS INSIDE THE VIDEO CODE.
-- SYNTAX REMINDER: Enclose all style transforms containing \${...} in backticks (\`...\`).
-- Return ONLY clean, executable React component code.`;
+- Resolution: 1920x1080 (16:9)
+- Total Duration: ${durationSeconds}s (${durationInFrames} frames at ${fps} FPS).
+- Component Signature: function MotionScene() or export default function MotionScene()
+- Output: Return ONLY pure, executable component code.`;
 };
 
 /**
- * Cleanly extracts a meaningful brand/topic title from user prompt text
+ * Dynamic thematic palette & visual profile extractor for bespoke motion graphics
  */
-const extractMeaningfulTitle = (rawPrompt = '') => {
-  const p = (rawPrompt || '').trim();
-  if (!p) return 'ANTRA STUDIO';
+const inferVisualTheme = (prompt = '') => {
+  const p = prompt.toLowerCase();
 
-  // Strip common filler conversational prefixes
-  const clean = p
-    .replace(/^(my business is|we are|we provide|our product is|create a video for|making video explain|explain|make a website for|generate video for)\s+/gi, '')
-    .trim();
+  if (p.match(/seo|search|rank|keyword|traffic|google|engine/)) {
+    return {
+      title: 'AI SEARCH INTELLIGENCE',
+      tagline: 'AUTONOMOUS INDEXING & TOP-TIER RANK ACCELERATION',
+      primaryColor: '#10B981', // Emerald
+      secondaryColor: '#06B6D4', // Cyan
+      accentColor: '#3B82F6', // Blue
+      iconName: 'Search',
+      metrics: [
+        { label: 'Organic Traffic', value: '+340%', icon: 'TrendingUp' },
+        { label: 'Keyword Velocity', value: '14.2x Faster', icon: 'Zap' },
+        { label: 'Search Visibility', value: 'Top 0.1%', icon: 'Sparkles' }
+      ]
+    };
+  }
 
-  // If there's an obvious domain keyword (e.g., SEO, AI, Analytics, Fitness)
-  if (/seo/i.test(clean)) return 'AI-POWERED SEO';
-  if (/crypto|fintech|trading/i.test(clean)) return 'NEXUS PROTOCOL';
-  if (/fitness|gym|workout/i.test(clean)) return 'PULSE FITNESS';
-  if (/luxury|fashion/i.test(clean)) return 'AURA ATELIER';
-  if (/cyber|security/i.test(clean)) return 'SENTINEL DEFENSE';
+  if (p.match(/crypto|bitcoin|fintech|bank|trade|trading|money|defi|wallet|invest/)) {
+    return {
+      title: 'NEXUS PROTOCOL',
+      tagline: 'NEXT-GENERATION DECENTRALIZED ASSET INFRASTRUCTURE',
+      primaryColor: '#06B6D4', // Cyan
+      secondaryColor: '#6366F1', // Indigo
+      accentColor: '#10B981', // Emerald
+      iconName: 'Shield',
+      metrics: [
+        { label: 'Settlement Latency', value: '0.02 ms', icon: 'Zap' },
+        { label: '24h Volume', value: '$840.5M', icon: 'TrendingUp' },
+        { label: 'Security Audit', value: 'Multi-Sig 100%', icon: 'Lock' }
+      ]
+    };
+  }
 
-  const words = clean.split(/\s+/).filter(Boolean);
-  return words.length > 0 ? words.slice(0, 3).join(' ').toUpperCase() : 'ANTRA STUDIO';
+  if (p.match(/fitness|gym|workout|sport|muscle|crossfit|health|diet|runner/)) {
+    return {
+      title: 'PULSE ENGINE',
+      tagline: 'BIOMETRIC TELEMETRY & ADAPTIVE ATHLETIC TRAINING',
+      primaryColor: '#FF3B30', // Crimson
+      secondaryColor: '#FF9500', // Orange
+      accentColor: '#FFCC00', // Gold
+      iconName: 'Flame',
+      metrics: [
+        { label: 'Active Caloric Burn', value: '940 kcal', icon: 'Flame' },
+        { label: 'Peak Zone Duration', value: '48 mins', icon: 'Activity' },
+        { label: 'Recovery Score', value: '96.4%', icon: 'Sparkles' }
+      ]
+    };
+  }
+
+  // Universal modern tech / AI experience
+  const words = prompt.trim().split(/\s+/).filter(Boolean);
+  const cleanTitle = words.length > 0 ? words.slice(0, 3).join(' ').toUpperCase() : 'ANTRA STUDIO';
+
+  return {
+    title: cleanTitle,
+    tagline: 'DYNAMIC HIGH-PERFORMANCE WEB VIDEO CANVAS',
+    primaryColor: '#8B5CF6', // Violet
+    secondaryColor: '#EC4899', // Pink
+    accentColor: '#3B82F6', // Blue
+    iconName: 'Sparkles',
+    metrics: [
+      { label: 'Frame Pipeline', value: '60 FPS Smooth', icon: 'Zap' },
+      { label: 'Resolution', value: 'Full 1080p', icon: 'Layers' },
+      { label: 'Interaction', value: 'DOM Overlay Ready', icon: 'Globe' }
+    ]
+  };
 };
 
 /**
- * Fallback procedural motion graphics generator
- * Adheres strictly to the rule: Clean motion graphic backdrop with atmospheric visuals, 
- * kinetic typography, ambient orbits, and SVG telemetry, but NO buttons or clickables.
+ * Modern procedural motion graphics generator tailored to the extracted domain theme.
+ * Completely free of fixed 3D wireframe grids or repetitive boxes.
  */
 export const generateProceduralRemotionCode = ({
   prompt = '',
@@ -79,180 +126,138 @@ export const generateProceduralRemotionCode = ({
   durationSeconds = 15,
   fps = 30
 }) => {
-  const brandTitle = extractMeaningfulTitle(prompt);
+  const theme = inferVisualTheme(prompt);
 
   return `function MotionScene() {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const durationInFrames = ${durationInFrames};
+  const { fps, durationInFrames } = useVideoConfig();
 
-  // Cinematic camera push-in zoom
-  const cameraScale = interpolate(frame, [0, durationInFrames], [1, 1.05], {
+  // Subtle continuous cinematic camera movement
+  const cameraScale = interpolate(frame, [0, durationInFrames], [1, 1.06], {
     easing: Easing.bezier(0.16, 1, 0.3, 1),
     extrapolateRight: 'clamp'
   });
 
-  // Entrance physics spring
-  const enterScale = spring({
-    frame,
-    fps,
-    config: { damping: 14, mass: 0.6 }
-  });
+  // Scene transition timelines
+  const s1End = Math.round(durationInFrames * 0.35);
+  const s2End = Math.round(durationInFrames * 0.75);
 
-  // Smooth ambient rotation and floating drift
-  const rotateAngle = interpolate(frame, [0, durationInFrames], [0, 360]);
-  const pulseGlow = interpolate(frame, [0, Math.round(durationInFrames / 2), durationInFrames], [0.85, 1.2, 0.85]);
-  const floatY = interpolate(frame, [0, Math.round(durationInFrames / 2), durationInFrames], [0, -14, 0]);
+  const heroSpring = spring({ frame, fps, config: { damping: 14, mass: 0.6 } });
+  const pulseLoop = interpolate(frame, [0, Math.round(durationInFrames / 2), durationInFrames], [0.85, 1.25, 0.85]);
+  const floatY = interpolate(frame, [0, Math.round(durationInFrames / 2), durationInFrames], [0, -16, 0]);
 
-  // Staggered telemetry cards
-  const card1Enter = spring({ frame: frame - 15, fps, config: { damping: 12, mass: 0.5 } });
-  const card2Enter = spring({ frame: frame - 30, fps, config: { damping: 12, mass: 0.5 } });
-  const card3Enter = spring({ frame: frame - 45, fps, config: { damping: 12, mass: 0.5 } });
+  // Animated progress curves
+  const progress1 = interpolate(frame, [15, s1End], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const progress2 = interpolate(frame, [s1End, s2End], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
   return (
-    <div
-      style={{ transform: \`scale(\${cameraScale})\` }}
-      className="relative w-full h-full bg-[#060608] text-white flex flex-col items-center justify-between p-12 overflow-hidden select-none font-sans"
-    >
+    <AbsoluteFill className="bg-[#050508] text-white flex flex-col items-center justify-center overflow-hidden select-none font-sans">
       {/* Dynamic Ambient Background Aura */}
       <div
         style={{
-          background: 'radial-gradient(circle at 50% 45%, #E9546428 0%, transparent 60%)',
-          transform: \`scale(\${pulseGlow})\`
+          background: 'radial-gradient(circle at 50% 50%, ${theme.primaryColor}22 0%, transparent 65%)',
+          transform: \`scale(\${pulseLoop})\`
         }}
         className="absolute inset-0 pointer-events-none blur-[140px]"
       />
       <div
         style={{
-          background: 'radial-gradient(circle at 30% 75%, #6366F122 0%, transparent 55%)'
+          background: 'radial-gradient(circle at 80% 20%, ${theme.secondaryColor}18 0%, transparent 55%)'
         }}
-        className="absolute inset-0 pointer-events-none blur-[110px]"
+        className="absolute inset-0 pointer-events-none blur-[120px]"
       />
 
-      {/* Perspective Wireframe Ground Grid */}
+      {/* Cinematic Main Scene (0 to End) */}
       <div
-        style={{
-          backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '70px 70px',
-          transform: 'perspective(500px) rotateX(60deg) translateY(140px) scale(1.8)',
-          opacity: 0.55
-        }}
-        className="absolute inset-0 pointer-events-none"
-      />
-
-      {/* Floating Orbital Kinetic Rings */}
-      <div
-        style={{
-          transform: \`rotate(\${rotateAngle * 0.3}deg)\`,
-          border: '1px dashed rgba(233, 84, 100, 0.35)'
-        }}
-        className="absolute w-[680px] h-[680px] rounded-full pointer-events-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-      />
-      <div
-        style={{
-          transform: \`rotate(\${-rotateAngle * 0.2}deg)\`,
-          border: '1px solid rgba(255,255,255,0.08)'
-        }}
-        className="absolute w-[840px] h-[840px] rounded-full pointer-events-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-      />
-
-      {/* Top Header Badge */}
-      <div
-        style={{ transform: \`scale(\${enterScale})\` }}
-        className="relative z-10 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md shadow-lg"
+        style={{ transform: \`scale(\${cameraScale})\` }}
+        className="relative z-10 w-full h-full flex flex-col items-center justify-between p-16"
       >
-        <Sparkles className="w-3.5 h-3.5 text-[#E95464] animate-pulse" />
-        <span className="text-[11px] font-mono tracking-widest uppercase text-zinc-300">
-          MOTION CANVAS · NEXT-GEN INTELLIGENCE
-        </span>
-      </div>
-
-      {/* Central Kinetic Hero Graphic */}
-      <div
-        style={{
-          transform: \`scale(\${enterScale}) translateY(\${floatY}px)\`
-        }}
-        className="relative z-10 flex flex-col items-center text-center max-w-4xl mt-6"
-      >
-        <h1
-          style={{
-            backgroundImage: 'linear-gradient(135deg, #ffffff 40%, #E95464 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}
-          className="text-5xl sm:text-7xl font-black tracking-tight leading-none mb-4 uppercase"
+        {/* Top Header Identity */}
+        <div
+          style={{ transform: \`scale(\${heroSpring})\` }}
+          className="flex items-center gap-3 px-5 py-2 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-xl shadow-xl"
         >
-          ${brandTitle}
-        </h1>
-
-        <p className="text-xl sm:text-2xl font-semibold tracking-wide text-zinc-200 uppercase mb-3">
-          DYNAMIC SPATIAL MOTION GRAPHIC
-        </p>
-
-        {/* Dynamic Animated Pulse Wave / SVG Graphic */}
-        <div className="w-full max-w-md h-12 mt-6 flex items-center justify-center opacity-85">
-          <svg viewBox="0 0 400 60" className="w-full h-full stroke-[#E95464] fill-none stroke-2">
-            <path
-              d="M 0 30 Q 50 30 70 30 L 90 10 L 110 50 L 130 15 L 150 40 L 170 30 Q 250 30 270 30 L 290 8 L 310 52 L 330 20 L 350 30 L 400 30"
-              strokeDasharray="400"
-              strokeDashoffset={400 - (frame * 3) % 400}
-              className="transition-all"
-            />
-          </svg>
+          <${theme.iconName} className="w-4 h-4 text-[${theme.primaryColor}] animate-pulse" />
+          <span className="text-xs font-mono tracking-widest uppercase text-zinc-300">
+            ${theme.title} · NEXT-GEN INTELLIGENCE
+          </span>
         </div>
-      </div>
 
-      {/* Bottom Floating Telemetry Cards (Visual Atmosphere Only - No Buttons) */}
-      <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-4xl mb-4">
+        {/* Central Kinetic Kinetic Typography & Kinetic SVG Visualizer */}
         <div
           style={{
-            transform: \`scale(\${Math.max(0, card1Enter)})\`,
-            opacity: Math.max(0, Math.min(1, card1Enter))
+            transform: \`scale(\${heroSpring}) translateY(\${floatY}px)\`
           }}
-          className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-xl"
+          className="flex flex-col items-center text-center max-w-4xl"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#E95464]/15 border border-[#E95464]/30 flex items-center justify-center text-[#E95464] shrink-0">
-            <Zap className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-mono uppercase text-zinc-400 leading-tight">Engine Core</div>
-            <div className="text-xl font-bold text-white tracking-tight">AI Driven</div>
+          <h1
+            style={{
+              backgroundImage: 'linear-gradient(135deg, #ffffff 40%, ${theme.secondaryColor} 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}
+            className="text-6xl sm:text-8xl font-black tracking-tight uppercase mb-4 leading-none"
+          >
+            ${theme.title}
+          </h1>
+
+          <p className="text-lg sm:text-xl font-medium tracking-wide text-zinc-300 uppercase max-w-2xl mb-8">
+            ${theme.tagline}
+          </p>
+
+          {/* Dynamic SVG Animated Trajectory Graph */}
+          <div className="w-full max-w-lg h-20 opacity-80">
+            <svg viewBox="0 0 500 80" className="w-full h-full fill-none stroke-2">
+              <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="${theme.primaryColor}" />
+                  <stop offset="100%" stopColor="${theme.secondaryColor}" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 10 70 Q 120 70 180 50 T 320 25 T 490 10"
+                stroke="url(#grad)"
+                strokeDasharray="500"
+                strokeDashoffset={500 - (progress1 * 500)}
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+              <circle
+                cx={10 + (progress1 * 480)}
+                cy={70 - (progress1 * 60)}
+                r="5"
+                fill="${theme.secondaryColor}"
+                className="transition-all"
+              />
+            </svg>
           </div>
         </div>
 
-        <div
-          style={{
-            transform: \`scale(\${Math.max(0, card2Enter)})\`,
-            opacity: Math.max(0, Math.min(1, card2Enter))
-          }}
-          className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-xl"
-        >
-          <div className="w-10 h-10 rounded-xl bg-[#6366F1]/15 border border-[#6366F1]/30 flex items-center justify-center text-[#6366F1] shrink-0">
-            <Activity className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-mono uppercase text-zinc-400 leading-tight">Architecture</div>
-            <div className="text-xl font-bold text-white tracking-tight">Zero-Latency</div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            transform: \`scale(\${Math.max(0, card3Enter)})\`,
-            opacity: Math.max(0, Math.min(1, card3Enter))
-          }}
-          className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-xl"
-        >
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-mono uppercase text-zinc-400 leading-tight">Interaction</div>
-            <div className="text-xl font-bold text-white tracking-tight">DOM Ready</div>
-          </div>
+        {/* Bottom Kinetic Metric Badges (Visual Data Only - No Buttons) */}
+        <div className="flex flex-wrap items-center justify-center gap-6 w-full max-w-4xl">
+          ${theme.metrics
+            .map(
+              (m, i) => `
+          <div
+            style={{
+              transform: \`translateY(\${(1 - progress1) * 20}px)\`,
+              opacity: progress1
+            }}
+            className="px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md flex items-center gap-3.5 shadow-lg"
+          >
+            <div className="w-8 h-8 rounded-lg bg-[${theme.primaryColor}]/15 flex items-center justify-center text-[${theme.primaryColor}]">
+              <${m.icon} className="w-4 h-4" />
+            </div>
+            <div className="text-left">
+              <div className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">${m.label}</div>
+              <div className="text-lg font-bold text-white tracking-tight">${m.value}</div>
+            </div>
+          </div>`
+            )
+            .join('')}
         </div>
       </div>
-    </div>
+    </AbsoluteFill>
   );
 }`;
 };
@@ -296,36 +301,34 @@ export const generateRemotionMotionVideo = async ({
   if (resolvedApiKey) {
     const hasImages = Array.isArray(images) && images.some((img) => img.base64 || img.dataUrl);
 
-    // If images are provided, prioritize models that support image input
+    // Fast, responsive free candidate models
     const candidateModels = hasImages
       ? [
-          OPENROUTER_MODELS.LING_FLASH_FREE,
           OPENROUTER_MODELS.NEMOTRON_VL_FREE,
+          OPENROUTER_MODELS.LING_FLASH_FREE,
           OPENROUTER_MODELS.OPENROUTER_FREE
         ]
       : [
           model || OPENROUTER_MODELS.COHERE_CODE_FREE,
           OPENROUTER_MODELS.COHERE_CODE_FREE,
+          OPENROUTER_MODELS.PARTICLE_FREE,
           OPENROUTER_MODELS.LING_FLASH_FREE,
-          OPENROUTER_MODELS.LIQUID_FREE,
           OPENROUTER_MODELS.OPENROUTER_FREE
         ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
 
     // Build user message content supporting multi-modal design images
     const userMessageContent = [];
 
-    const userInstructions = `Here is the user brief about their business / product:
+    const userInstructions = `Here is the user brief about their business or product:
 "${prompt || 'Modern interactive product experience'}".
 
-Design Reference Files Uploaded: ${images.length} file(s).
-Total Video Duration Budget: ${durationSeconds} seconds (${durationInFrames} frames at ${fps} FPS).
+Video Duration: ${durationSeconds} seconds (${durationInFrames} frames at ${fps} FPS).
 
 Instructions:
-1. Generate the Remotion React component \`MotionScene()\` that visually tells the story of this product/business.
-2. If design images are attached, extract their color palette, typography styling, and branding atmosphere.
-3. REMEMBER: DO NOT INCLUDE BUTTONS OR CLICKABLE CONTROLS in the video code. This video is strictly the visual background backdrop.
-4. SYNTAX RULE: When writing inline style={{ transform: ... }}, wrap strings containing \${...} in backticks: style={{ transform: \`scale(\${scale})\` }}
-5. Return ONLY runnable React component code.`;
+1. Write the Remotion React component \`function MotionScene()\` tailored to this specific business/product.
+2. DO NOT use generic templates, fixed grids, or repetitive 3-box HUDs. Create a unique, cinematic visual sequence.
+3. DO NOT include any HTML buttons or interactive controls inside the video.
+4. Output ONLY clean React component code.`;
 
     userMessageContent.push({
       type: 'text',
@@ -355,7 +358,7 @@ Instructions:
         });
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout per candidate
+        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -428,10 +431,10 @@ Instructions:
     }
   }
 
-  // Fallback Pipeline: Rich procedural motion graphics tailored to the user brief
+  // Fallback Pipeline: Bespoke procedural motion graphics tailored to the user brief
   const steps = [
     { percent: 35, message: `Synthesizing ${durationSeconds}s kinetic motion canvas...` },
-    { percent: 70, message: 'Interpolating ambient lighting, orbital geometry & SVG telemetry...' },
+    { percent: 70, message: 'Interpolating ambient lighting, orbital trajectory & SVG telemetry...' },
     { percent: 90, message: 'Assembling interactive Remotion composition layer...' },
     { percent: 100, message: 'Ready!' }
   ];
@@ -471,7 +474,8 @@ const SafeLucideIcons = new Proxy(LucideIcons, {
 });
 
 /**
- * Dynamically compiles Remotion JSX code into a live React component
+ * Dynamically compiles Remotion JSX code into a live React component.
+ * Supports TypeScript, JSX, and auto-repairs common minor LLM syntax mistakes.
  */
 export const compileRemotionCode = (codeString) => {
   if (!codeString || typeof codeString !== 'string') {
@@ -494,19 +498,18 @@ export const compileRemotionCode = (codeString) => {
       cleanCode = cleanCode.replace(/export\s+/g, '');
     }
 
-    // 3. Auto-fix unquoted template strings in style props (e.g. style={{ transform: scale(${s}) }})
-    cleanCode = cleanCode.replace(/style=\{\{([^}]+)\}\}/g, (match, body) => {
-      // Look for prop: unquoted_with_dollar_curly
-      const fixedBody = body.replace(/([a-zA-Z0-9_-]+)\s*:\s*([^'"`,\n]+\$\{[^}]+\}[^'"`,\n]*)/g, (m, prop, val) => {
-        return `${prop}: \`${val.trim()}\``;
-      });
-      return `style={{${fixedBody}}}`;
-    });
+    // 3. Auto-repair unquoted template literal syntax in styles (e.g., transform: scale(${x}))
+    cleanCode = cleanCode.split('\n').map((line) => {
+      return line.replace(
+        /^(\s*[a-zA-Z0-9_-]+\s*:\s*)([^\`\'\"\n]+?\$\{[^\n]+\}[^\`\'\"\n,;]*)(,?)$/,
+        (m, p1, p2, p3) => `${p1}\`${p2.trim()}\`${p3}`
+      );
+    }).join('\n');
 
-    // 4. Transform JSX using Babel Standalone
+    // 4. Transform JSX and TypeScript using Babel Standalone
     const transformed = Babel.transform(cleanCode, {
-      presets: ['react'],
-      filename: 'remotionScene.jsx'
+      presets: ['react', 'typescript'],
+      filename: 'remotionScene.tsx'
     }).code;
 
     // 5. Construct comprehensive sandbox scope with injected Remotion hooks, React, and Lucide Icons
@@ -543,7 +546,7 @@ export const compileRemotionCode = (codeString) => {
         ArrowRight, ChevronRight, Shield, Layers, Code, Globe, Star, Check,
         CheckCircle, Play, Pause, Clock, Compass, Sliders, Smartphone, Laptop,
         CreditCard, BarChart2, BarChart, Cpu, Wifi, Eye, RefreshCw, Radio, Target,
-        Search, AlertCircle
+        Search, AlertCircle, Lock
       } = LucideIcons;
     `;
 
