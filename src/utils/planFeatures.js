@@ -10,7 +10,18 @@ export const ANTRA_PLANS = {
     displayName: 'Antra Pro',
     price: '$4.50/mo',
     regularPrice: '$9.00/mo',
+    priceUsd: 4.50,
+    priceInr: 379,
     status: 'active',
+    tags: [
+      'plan:pro',
+      'tier:starter',
+      'limit:1_site',
+      'video:15s',
+      'storage:500mb',
+      'branding:clean',
+      'ai:payg'
+    ],
     limits: {
       maxVideoDuration: 15.0, // seconds
       maxSites: 1,
@@ -41,7 +52,19 @@ export const ANTRA_PLANS = {
     displayName: 'Antra Ultra',
     price: '$19.00/mo',
     regularPrice: '$19.00/mo',
+    priceUsd: 19.00,
+    priceInr: 1599,
     status: 'upcoming',
+    tags: [
+      'plan:ultra',
+      'tier:pro-creator',
+      'limit:5_sites',
+      'video:30s',
+      'storage:2500mb',
+      'spatial_3d',
+      'lead_gen',
+      'ai:5_included'
+    ],
     limits: {
       maxVideoDuration: 30.0,
       maxSites: 5,
@@ -72,7 +95,22 @@ export const ANTRA_PLANS = {
     displayName: 'Antra Max',
     price: '$39.00/mo',
     regularPrice: '$39.00/mo',
+    priceUsd: 39.00,
+    priceInr: 3299,
     status: 'upcoming',
+    tags: [
+      'plan:max',
+      'tier:enterprise',
+      'limit:15_sites',
+      'video:60s',
+      'storage:10000mb',
+      'spatial_3d',
+      'lead_gen',
+      'white_label',
+      'previs_diffusion',
+      'webhooks',
+      'ai:15_included'
+    ],
     limits: {
       maxVideoDuration: 60.0,
       maxSites: 15,

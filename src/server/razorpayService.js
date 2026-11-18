@@ -160,3 +160,53 @@ export async function getRazorpayQrStatus({ qrId, keyId, keySecret }) {
     keySecret
   });
 }
+
+/**
+ * 4. Create an official Razorpay Hosted Payment Link
+ * (Universal endpoint supported across all live Razorpay accounts with 200 OK)
+ */
+export async function createRazorpayPaymentLink({ planId, userEmail, keyId, keySecret }) {
+  const { inr, paise, usd } = calculateInrAmount(planId);
+  const planName = PLAN_PRICE_MAP[planId]?.name || `Antra ${planId}`;
+
+  const payload = {
+    amount: paise,
+    currency: 'INR',
+    accept_partial: false,
+    description: `Subscription for ${planName} ($${usd.toFixed(2)} / ₹${inr})`,
+    customer: {
+      name: userEmail?.split('@')[0] || 'Antra Creator',
+      email: userEmail || 'creator@antra.studio'
+    },
+    notify: {
+      sms: false,
+      email: true
+    },
+    reminder_enable: false,
+    notes: {
+      plan_id: planId,
+      usd_price: String(usd),
+      inr_price: String(inr)
+    }
+  };
+
+  return await callRazorpayApi({
+    path: '/v1/payment_links',
+    method: 'POST',
+    data: payload,
+    keyId,
+    keySecret
+  });
+}
+
+/**
+ * 5. Fetch status of a Razorpay Payment Link
+ */
+export async function getRazorpayPaymentLinkStatus({ paymentLinkId, keyId, keySecret }) {
+  return await callRazorpayApi({
+    path: `/v1/payment_links/${encodeURIComponent(paymentLinkId)}`,
+    method: 'GET',
+    keyId,
+    keySecret
+  });
+}

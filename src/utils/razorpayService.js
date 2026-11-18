@@ -52,15 +52,6 @@ export async function generateQrDataUrl(text) {
   }
 }
 
-/**
- * Fallback generator for standard UPI string when offline or keys missing
- */
-export function buildStandardUpiString({ payeeVpa = 'antra@razorpay', payeeName = 'Antra Studio', amountInr = 375, note = 'Antra Plan' }) {
-  const cleanVpa = encodeURIComponent(payeeVpa);
-  const cleanName = encodeURIComponent(payeeName);
-  const cleanNote = encodeURIComponent(note);
-  return `upi://pay?pa=${cleanVpa}&pn=${cleanName}&am=${amountInr}&cu=INR&tn=${cleanNote}`;
-}
 
 /**
  * Request Razorpay QR code creation from backend

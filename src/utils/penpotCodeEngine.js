@@ -28,8 +28,8 @@ export const PENPOT_GRADIENT_PRESETS = [
 ];
 
 export const PENPOT_FONTS = [
-  { label: 'Belanosima', value: "'Belanosima', sans-serif", category: 'Display' },
   { label: 'Inter', value: "'Inter', sans-serif", category: 'Sans-Serif' },
+  { label: 'Belanosima', value: "'Belanosima', sans-serif", category: 'Display' },
   { label: 'Plus Jakarta Sans', value: "'Plus Jakarta Sans', sans-serif", category: 'Sans-Serif' },
   { label: 'Outfit', value: "'Outfit', sans-serif", category: 'Display' },
   { label: 'Syne', value: "'Syne', sans-serif", category: 'Display' },
@@ -426,7 +426,7 @@ export const generatePenpotSpecJson = (comp) => {
         backdropFilter: style.backdropFilter || 'none'
       },
       typography: {
-        fontFamily: style.fontFamily || "'Belanosima', sans-serif",
+        fontFamily: style.fontFamily || "'Inter', sans-serif",
         fontSize: style.fontSize || '16px',
         fontWeight: style.fontWeight || '400',
         textAlign: style.textAlign || 'left',

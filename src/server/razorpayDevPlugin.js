@@ -1,9 +1,37 @@
+import fs from 'fs';
+import path from 'path';
 import { 
   createRazorpayQrCode, 
   getRazorpayQrPayments, 
   getRazorpayQrStatus,
+  createRazorpayPaymentLink,
+  getRazorpayPaymentLinkStatus,
   calculateInrAmount 
 } from './razorpayService.js';
+
+/**
+ * Load .env.local directly from disk if process.env is missing keys
+ */
+function getLocalEnvKeys() {
+  const envPath = path.resolve(process.cwd(), '.env.local');
+  const result = { keyId: '', keySecret: '' };
+  try {
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf-8');
+      content.split('\n').forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('VITE_RAZORPAY_KEY_ID=')) {
+          result.keyId = trimmed.split('=')[1].trim();
+        } else if (trimmed.startsWith('VITE_RAZORPAY_KEY_SECRET=')) {
+          result.keySecret = trimmed.split('=')[1].trim();
+        }
+      });
+    }
+  } catch (e) {
+    // ignore
+  }
+  return result;
+}
 
 /**
  * Vite Dev Plugin for Razorpay Backend API
@@ -20,13 +48,15 @@ export function razorpayDevPlugin() {
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url, `http://${req.headers.host}`);
 
-        // Helper to get Razorpay credentials from headers, env or process
+        // Helper to get Razorpay credentials from headers, env or .env.local
         const getCredentials = (body) => {
+          const fileKeys = getLocalEnvKeys();
           const keyId = 
             req.headers['x-razorpay-key-id'] || 
             body?.keyId || 
             process.env.RAZORPAY_KEY_ID || 
             process.env.VITE_RAZORPAY_KEY_ID || 
+            fileKeys.keyId ||
             '';
 
           const keySecret = 
@@ -34,6 +64,7 @@ export function razorpayDevPlugin() {
             body?.keySecret || 
             process.env.RAZORPAY_KEY_SECRET || 
             process.env.VITE_RAZORPAY_KEY_SECRET || 
+            fileKeys.keySecret ||
             '';
 
           return { keyId: String(keyId).trim(), keySecret: String(keySecret).trim() };
@@ -41,6 +72,7 @@ export function razorpayDevPlugin() {
 
         // 1. Config Check Endpoint
         if (req.method === 'GET' && url.pathname === '/api/razorpay/config-check') {
+          const fileKeys = getLocalEnvKeys();
           const { keyId, keySecret } = getCredentials();
           const isConfigured = Boolean(keyId && keySecret && !keyId.includes('your_') && !keySecret.includes('your_'));
 
@@ -76,6 +108,38 @@ export function razorpayDevPlugin() {
                 return;
               }
 
+              // Attempt to create Razorpay Payment Link first (or QR code)
+              let paymentLinkResult = null;
+              try {
+                paymentLinkResult = await createRazorpayPaymentLink({
+                  planId,
+                  userEmail,
+                  keyId,
+                  keySecret
+                });
+              } catch (linkErr) {
+                console.warn('[Razorpay Server] Payment link notice, attempting QR code:', linkErr.message);
+              }
+
+              if (paymentLinkResult && paymentLinkResult.id) {
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({
+                  success: true,
+                  isPaymentLink: true,
+                  id: paymentLinkResult.id,
+                  short_url: paymentLinkResult.short_url,
+                  qrCode: {
+                    id: paymentLinkResult.id,
+                    image_url: null,
+                    short_url: paymentLinkResult.short_url
+                  },
+                  planId,
+                  currencyCalculation: calculateInrAmount(planId)
+                }));
+                return;
+              }
+
+              // Fallback to standalone QR Code API if payment link was not returned
               const qrResponse = await createRazorpayQrCode({
                 planId,
                 userEmail,
@@ -87,11 +151,12 @@ export function razorpayDevPlugin() {
               res.end(JSON.stringify({
                 success: true,
                 qrCode: qrResponse,
+                id: qrResponse.id,
                 planId,
                 currencyCalculation: calculateInrAmount(planId)
               }));
             } catch (err) {
-              console.error('[Razorpay Server] Error generating QR code:', err.message);
+              console.error('[Razorpay Server] Error generating QR/Payment Link:', err.message);
               res.statusCode = err.statusCode || 500;
               res.setHeader('Content-Type', 'application/json');
               res.end(JSON.stringify({
@@ -119,6 +184,26 @@ export function razorpayDevPlugin() {
             if (!keyId || !keySecret) {
               res.setHeader('Content-Type', 'application/json');
               res.end(JSON.stringify({ success: false, requiresKeys: true }));
+              return;
+            }
+
+            // Check if this is a payment link (plink_...)
+            if (qrId.startsWith('plink_')) {
+              const linkStatus = await getRazorpayPaymentLinkStatus({
+                paymentLinkId: qrId,
+                keyId,
+                keySecret
+              });
+
+              const isPaid = linkStatus.status === 'paid' || (linkStatus.amount_paid && linkStatus.amount_paid >= linkStatus.amount);
+
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({
+                success: true,
+                isPaid,
+                status: linkStatus.status,
+                paymentLink: linkStatus
+              }));
               return;
             }
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Check, CheckCircle2 } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
 import { useAuth } from '../../context/AuthContext';
+import { logUserActivity } from '../../utils/supabaseTracking';
 
 export const PricingView = () => {
   const { setViewMode, setSelectedPlan } = useEditor();
@@ -12,6 +13,11 @@ export const PricingView = () => {
     if (setSelectedPlan) {
       setSelectedPlan(planId);
     }
+    logUserActivity({
+      user,
+      action: 'plan_selected',
+      details: { selected_plan: planId, source: 'pricing_table' }
+    });
     setViewMode('checkout');
   };
 

@@ -568,9 +568,9 @@ export const PropertiesPanel = () => {
                   <select
                     value={style.fontFamily || PENPOT_FONTS[0].value}
                     onChange={(e) => updateStyle({ fontFamily: e.target.value })}
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-md px-2.5 py-1.5 text-xs text-zinc-900 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer shadow-2xs"
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-md px-2.5 py-1.5 text-xs text-zinc-900 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer shadow-2xs font-sans"
                   >
-                    {['Display', 'Sans-Serif', 'Serif', 'Monospace', 'System'].map((cat) => {
+                    {['Sans-Serif', 'Display', 'Serif', 'Monospace', 'System'].map((cat) => {
                       const fontsInCat = PENPOT_FONTS.filter((f) => f.category === cat);
                       if (!fontsInCat.length) return null;
                       return (
@@ -604,14 +604,14 @@ export const PropertiesPanel = () => {
                   <select
                     value={style.fontWeight || '400'}
                     onChange={(e) => updateStyle({ fontWeight: e.target.value })}
-                    className="bg-zinc-50 border border-zinc-200 rounded-md px-2 py-1 text-[11px] text-zinc-800 focus:outline-none focus:border-indigo-500"
+                    className="bg-zinc-50 border border-zinc-200 rounded-md px-2 py-1 text-[11px] text-zinc-800 focus:outline-none focus:border-indigo-500 font-sans font-medium cursor-pointer"
                   >
-                    <option value="300">Light 300</option>
-                    <option value="400">Regular 400</option>
-                    <option value="500">Medium 500</option>
-                    <option value="600">Semibold 600</option>
-                    <option value="700">Bold 700</option>
-                    <option value="800">ExtraBold 800</option>
+                    <option value="300">Light (300)</option>
+                    <option value="400">Regular / Normal (400)</option>
+                    <option value="500">Medium (500)</option>
+                    <option value="600">Semi-bold (600)</option>
+                    <option value="700">Bold (700)</option>
+                    <option value="800">Extra-bold (800)</option>
                   </select>
                 </div>
 

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { syncUserSubscription, logUserActivity } from './supabaseTracking';
 
 /**
  * Official DiceBear Voxel-Bot Avatar Generator
@@ -150,6 +151,13 @@ export async function signUpBuilder({ email, password, username, avatarSeed, pla
     };
 
     saveLocalSession(user);
+    // Sync subscription and log signup activity
+    try {
+      await syncUserSubscription({ user, planId: activePlan });
+      await logUserActivity({ user, action: 'user_signup', details: { plan: activePlan } });
+    } catch (e) {
+      console.warn('Subscription sync notice during signup:', e);
+    }
     return user;
   }
 
@@ -177,6 +185,12 @@ export async function signUpBuilder({ email, password, username, avatarSeed, pla
 
   const { password: _, ...sessionUser } = newUser;
   saveLocalSession(sessionUser);
+  try {
+    await syncUserSubscription({ user: sessionUser, planId: activePlan });
+    await logUserActivity({ user: sessionUser, action: 'user_signup', details: { plan: activePlan } });
+  } catch (e) {
+    // ignore
+  }
   return sessionUser;
 }
 
@@ -206,6 +220,12 @@ export async function signInBuilder({ email, password }) {
     };
 
     saveLocalSession(user);
+    try {
+      await syncUserSubscription({ user, planId: user.plan });
+      await logUserActivity({ user, action: 'user_login', details: { plan: user.plan } });
+    } catch (e) {
+      console.warn('Subscription sync notice during signin:', e);
+    }
     return user;
   }
 
@@ -226,11 +246,17 @@ export async function signInBuilder({ email, password }) {
     sessionUser.plan = 'pro';
   }
   saveLocalSession(sessionUser);
+  try {
+    await syncUserSubscription({ user: sessionUser, planId: sessionUser.plan });
+    await logUserActivity({ user: sessionUser, action: 'user_login', details: { plan: sessionUser.plan } });
+  } catch (e) {
+    // ignore
+  }
   return sessionUser;
 }
 
 /**
- * Update user plan in Supabase user metadata and local storage
+ * Update user plan in Supabase user metadata, user_subscriptions, and local storage
  */
 export async function updateUserPlan(planName) {
   const cleanPlan = (planName || 'pro').toLowerCase();
@@ -253,8 +279,9 @@ export async function updateUserPlan(planName) {
   }
 
   const currentSession = getLocalSession();
+  let updated = currentSession;
   if (currentSession) {
-    const updated = {
+    updated = {
       ...currentSession,
       plan: cleanPlan,
       plan_updated_at: new Date().toISOString()
@@ -266,17 +293,37 @@ export async function updateUserPlan(planName) {
       u.email === updated.email ? { ...u, plan: cleanPlan } : u
     );
     saveLocalUsers(updatedUsers);
-
-    return updated;
   }
 
-  return { plan: cleanPlan };
+  // Synchronize subscription limits & tags to Supabase user_subscriptions & log activity
+  try {
+    const userToSync = updated || { plan: cleanPlan, email: 'creator@antra.studio' };
+    await syncUserSubscription({ user: userToSync, planId: cleanPlan });
+    await logUserActivity({
+      user: userToSync,
+      action: 'plan_selected',
+      details: { new_plan: cleanPlan }
+    });
+  } catch (err) {
+    console.warn('Failed to sync plan to Supabase user_subscriptions:', err);
+  }
+
+  return updated || { plan: cleanPlan };
 }
 
 /**
  * Sign out current user
  */
 export async function signOutBuilder() {
+  const currentSession = getLocalSession();
+  if (currentSession) {
+    try {
+      await logUserActivity({ user: currentSession, action: 'user_logout' });
+    } catch (e) {
+      // ignore
+    }
+  }
+
   const client = getSupabaseClient();
   if (client) {
     try {

@@ -194,6 +194,7 @@ export async function transcodeToAllIntra({ file = null, url = null, onProgress 
 
     return {
       videoUrl: outputObjectUrl,
+      blob: outputBlob,
       isAllIntra: true,
       filename: outputName,
       engine: 'ffmpeg.wasm'

@@ -187,7 +187,7 @@ export function ffmpegTranscodePlugin() {
               stderrData += chunk.toString();
             });
 
-            ffmpegProcess.on('close', (code) => {
+            ffmpegProcess.on('close', async (code) => {
               // Clean up temporary downloaded/uploaded input if needed
               if (cleanupInput && fs.existsSync(inputFilePath)) {
                 try {
@@ -197,10 +197,28 @@ export function ffmpegTranscodePlugin() {
 
               if (code === 0) {
                 console.log(`[Antra FFmpeg Engine] Transcoding completed: ${relativeOutputUrl}`);
+
+                // Sync transcoded video to Cloudflare R2 with automatic deduplication
+                let r2SyncResult = null;
+                try {
+                  const { uploadVideoWithDeduplication } = await import('./r2Service.js');
+                  const outBuffer = fs.readFileSync(outputFilePath);
+                  r2SyncResult = await uploadVideoWithDeduplication({
+                    buffer: outBuffer,
+                    type: 'edited',
+                    originalName: outputFileName,
+                    mimeType: 'video/mp4'
+                  });
+                } catch (r2Err) {
+                  // Ignore if R2 not yet configured
+                }
+
                 res.setHeader('Content-Type', 'application/json');
                 res.end(JSON.stringify({
                   success: true,
-                  videoUrl: relativeOutputUrl,
+                  videoUrl: r2SyncResult?.url || relativeOutputUrl,
+                  r2Key: r2SyncResult?.key || null,
+                  r2Deduplicated: r2SyncResult?.deduplicated || false,
                   isAllIntra: true,
                   filename: outputFileName,
                   message: 'Successfully transcoded to All-Intra (I-Frame only) format.'

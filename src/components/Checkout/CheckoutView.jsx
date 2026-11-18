@@ -6,7 +6,6 @@ import {
   ShieldCheck, 
   Sparkles,
   RefreshCw,
-  AlertCircle,
   ExternalLink,
   CheckCircle2
 } from 'lucide-react';
@@ -15,9 +14,9 @@ import { useAuth } from '../../context/AuthContext';
 import {
   requestRazorpayQr,
   checkRazorpayPaymentStatus,
-  generateQrDataUrl,
-  buildStandardUpiString
+  generateQrDataUrl
 } from '../../utils/razorpayService';
+import { logUserActivity } from '../../utils/supabaseTracking';
 
 /**
  * Antra Brand Color Palette (from antra-color-code.png):
@@ -114,10 +113,11 @@ export const CheckoutView = () => {
   // Razorpay QR & Payment Integration State
   const [qrImageUrl, setQrImageUrl] = useState(null);
   const [qrId, setQrId] = useState(null);
+  const [razorpayLinkUrl, setRazorpayLinkUrl] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
-  const [qrSource, setQrSource] = useState('svg_fallback'); // 'razorpay_live' | 'upi_generated' | 'svg_fallback'
+  const [qrSource, setQrSource] = useState('razorpay_live');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [statusNotice, setStatusNotice] = useState('');
+  const [statusNotice, setStatusNotice] = useState('generating razorpay payment link...');
 
   // Countdown timer effect
   useEffect(() => {
@@ -127,70 +127,45 @@ export const CheckoutView = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch or generate QR code whenever activePlan or user changes
+  // Fetch or generate Razorpay Payment Link & QR code whenever activePlan or user changes
   useEffect(() => {
     let isCancelled = false;
 
     async function loadQrCode() {
       setQrLoading(true);
-      setStatusNotice('initializing razorpay upi qr...');
+      setStatusNotice('generating razorpay payment link...');
       setPaymentSuccess(false);
 
       try {
-        // 1. Try calling the backend Razorpay endpoint
         const response = await requestRazorpayQr({
           planId: activePlan.id,
-          userEmail: user?.email || 'guest@antra.studio'
+          userEmail: user?.email || 'creator@antra.studio'
         });
 
         if (isCancelled) return;
 
-        if (response.success && response.qrCode) {
-          const rzpQr = response.qrCode;
-          setQrId(rzpQr.id);
-          setQrSource('razorpay_live');
-
-          // If Razorpay returns a direct hosted image url
-          if (rzpQr.image_url) {
-            setQrImageUrl(rzpQr.image_url);
-          } else {
-            // Or generate QR image from the UPI intent string
-            const upiString = `upi://pay?pa=razorpay@icici&pn=Antra Studio&am=${activePlan.upiAmountInr}&cu=INR&tn=Antra ${activePlan.name} Plan`;
-            const dataUrl = await generateQrDataUrl(upiString);
+        if (response.success) {
+          const rzpLink = response.short_url || response.paymentLink?.short_url || response.qrCode?.short_url;
+          if (rzpLink) {
+            setRazorpayLinkUrl(rzpLink);
+            const dataUrl = await generateQrDataUrl(rzpLink);
             if (!isCancelled) setQrImageUrl(dataUrl);
+          } else if (response.qrCode?.image_url) {
+            if (!isCancelled) setQrImageUrl(response.qrCode.image_url);
           }
-          setStatusNotice('live razorpay qr generated');
+
+          if (response.id || response.qrCode?.id) {
+            setQrId(response.id || response.qrCode?.id);
+          }
+
+          setQrSource('razorpay_live');
+          setStatusNotice('live razorpay link ready');
         } else {
-          // Fallback: Generate real scannable UPI QR with exact plan INR amount
-          const upiString = buildStandardUpiString({
-            payeeVpa: 'antra@razorpay',
-            payeeName: 'Antra Studio',
-            amountInr: activePlan.upiAmountInr,
-            note: `Antra ${activePlan.name} Plan ($${activePlan.price.toFixed(2)})`
-          });
-          const dataUrl = await generateQrDataUrl(upiString);
-          if (!isCancelled) {
-            setQrImageUrl(dataUrl);
-            setQrSource('upi_generated');
-            setStatusNotice(
-              response.requiresKeys 
-                ? 'upi qr ready (add razorpay keys for auto-verification)' 
-                : 'standard upi qr active'
-            );
-          }
+          setStatusNotice(response.message || 'razorpay link generation failed');
         }
       } catch (err) {
-        console.warn('Backend Razorpay QR request error, falling back to local UPI QR:', err);
-        const upiString = buildStandardUpiString({
-          amountInr: activePlan.upiAmountInr,
-          note: `Antra ${activePlan.name} Plan`
-        });
-        const dataUrl = await generateQrDataUrl(upiString);
-        if (!isCancelled) {
-          setQrImageUrl(dataUrl);
-          setQrSource('upi_generated');
-          setStatusNotice('upi qr ready');
-        }
+        console.warn('Backend payment request notice:', err);
+        setStatusNotice('payment service unavailable');
       } finally {
         if (!isCancelled) setQrLoading(false);
       }
@@ -216,6 +191,18 @@ export const CheckoutView = () => {
           if (setUserPlan) {
             await setUserPlan(activePlan.id);
           }
+          await logUserActivity({
+            user,
+            action: 'payment_completed',
+            details: {
+              plan: activePlan.id,
+              method: 'razorpay_upi',
+              qr_id: qrId,
+              amount_inr: activePlan.upiAmountInr,
+              price_usd: activePlan.price,
+              is_simulated: false
+            }
+          });
         }
       } catch (e) {
         // silent polling error
@@ -223,7 +210,7 @@ export const CheckoutView = () => {
     }, 4000);
 
     return () => clearInterval(pollInterval);
-  }, [qrId, paymentSuccess, activePlan.id, setUserPlan]);
+  }, [qrId, paymentSuccess, activePlan.id, setUserPlan, user, activePlan.upiAmountInr, activePlan.price]);
 
 
   const handleSimulatePayment = async () => {
@@ -231,6 +218,17 @@ export const CheckoutView = () => {
     if (setUserPlan) {
       await setUserPlan(activePlan.id);
     }
+    await logUserActivity({
+      user,
+      action: 'payment_completed',
+      details: {
+        plan: activePlan.id,
+        method: 'razorpay_simulation',
+        amount_inr: activePlan.upiAmountInr,
+        price_usd: activePlan.price,
+        is_simulated: true
+      }
+    });
   };
 
   const formatTimer = (totalSeconds) => {
@@ -518,29 +516,27 @@ export const CheckoutView = () => {
               </div>
 
               {/* ====================================================== */}
-              {/* PLACED BELOW QR CODE (Moved from top red box)          */}
-              {/* Razorpay UPI Badge & Countdown Timer                   */}
-              {/* ====================================================== */}
+              {/* Razorpay Verified Badge & Countdown Timer */}
               <div className={`w-full flex items-center justify-between py-3 px-4 rounded-xl mt-3 transition-colors ${
                 themeMode === 'studio'
                   ? 'bg-white/[0.03] border border-white/[0.06]'
                   : 'bg-zinc-50/90 border border-zinc-200'
               }`}>
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-[#0C2340] text-[#0C83FE] flex items-center justify-center font-bold text-xs shadow-inner shrink-0 lowercase">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shadow-inner shrink-0 lowercase bg-[#0C2340] text-[#0C83FE]">
                     r
                   </div>
                   <div>
                     <div className={`text-xs font-semibold flex items-center gap-1.5 lowercase ${
                       themeMode === 'studio' ? 'text-white' : 'text-zinc-900'
                     }`}>
-                      <span>razorpay upi</span>
+                      <span>razorpay secure checkout</span>
                       <span className="px-1.5 py-0.2 bg-emerald-500/15 text-emerald-400 text-[10px] rounded font-small lowercase">
                         verified
                       </span>
                     </div>
-                    <div className="text-[11px] text-zinc-500 lowercase">
-                      scan with any upi or mobile banking app
+                    <div className="text-[11px] text-zinc-500 lowercase font-mono">
+                      pay via upi, cards, netbanking & qr
                     </div>
                   </div>
                 </div>
@@ -560,6 +556,21 @@ export const CheckoutView = () => {
                   <span>{formatTimer(secondsRemaining)}</span>
                 </div>
               </div>
+
+              {/* Razorpay Hosted Payment Link Action Button */}
+              {razorpayLinkUrl && (
+                <div className="w-full mt-2.5">
+                  <a
+                    href={razorpayLinkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white transition flex items-center justify-center gap-2 cursor-pointer lowercase"
+                  >
+                    <span>pay via razorpay gateway (cards, netbanking, upi)</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-[#E95464]" />
+                  </a>
+                </div>
+              )}
 
               {/* ====================================================== */}
               {/* MINI-FEATURE LIST (Moved from right side blue box)     */}

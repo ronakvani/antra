@@ -52,6 +52,30 @@ export const EditorProvider = ({ children }) => {
   const [referenceImages, setReferenceImages] = useState([]);
   const [promptText, setPromptText] = useState('');
 
+  // Cloudflare R2 Video Storage & Deduplication State (10GB Free Tier)
+  const [rawVideoUrl, setRawVideoUrl] = useState(null);
+  const [editedVideoUrl, setEditedVideoUrl] = useState(null);
+  const [r2StorageInfo, setR2StorageInfo] = useState(null);
+  const [r2Stats, setR2Stats] = useState(null);
+
+  const refreshR2Stats = async () => {
+    try {
+      const res = await fetch('/api/r2/stats');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setR2Stats(data.stats);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    refreshR2Stats();
+  }, []);
+
   // Interactive Overlay Manifest (content.json structure)
   const [manifest, setManifest] = useState({
     title: 'Antra Interactive Site',
@@ -178,6 +202,14 @@ export const EditorProvider = ({ children }) => {
         setManifest,
         selectedComponentId,
         setSelectedComponentId,
+        rawVideoUrl,
+        setRawVideoUrl,
+        editedVideoUrl,
+        setEditedVideoUrl,
+        r2StorageInfo,
+        setR2StorageInfo,
+        r2Stats,
+        refreshR2Stats,
         addComponent,
         updateComponent,
         removeComponent,

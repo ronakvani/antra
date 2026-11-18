@@ -69,7 +69,7 @@ export const ComponentLibrary = () => {
           icon: Heading,
           defaultContent: 'Interactive Headline',
           style: {
-            fontFamily: "'Belanosima', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             fontSize: 'clamp(22px, 3.2vw, 44px)',
             fontWeight: '700',
             color: '#111827',
@@ -83,8 +83,9 @@ export const ComponentLibrary = () => {
           icon: AlignLeft,
           defaultContent: 'Add your interactive story or feature description here for your website visitors.',
           style: {
-            fontFamily: "'Belanosima', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             fontSize: 'clamp(13px, 1.3vw, 17px)',
+            fontWeight: '400',
             color: '#4b5563',
             maxWidth: '42%',
             lineHeight: '1.6',
@@ -98,7 +99,8 @@ export const ComponentLibrary = () => {
           icon: Quote,
           defaultContent: '"Antra redefined how we build video-first web experiences."',
           style: {
-            fontFamily: "'Belanosima', sans-serif",
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: '400',
             borderLeft: '4px solid #4f46e5',
             paddingLeft: '16px',
             color: '#1f2937',
@@ -218,6 +220,7 @@ export const ComponentLibrary = () => {
           icon: MousePointer,
           defaultContent: 'Get Started',
           style: {
+            fontFamily: "'Inter', sans-serif",
             backgroundColor: '#111827',
             color: '#ffffff',
             padding: '10px 22px',
@@ -234,6 +237,7 @@ export const ComponentLibrary = () => {
           icon: Tag,
           defaultContent: '★ New Feature',
           style: {
+            fontFamily: "'Inter', sans-serif",
             backgroundColor: '#e0e7ff',
             color: '#3730a3',
             padding: '6px 14px',
@@ -250,6 +254,8 @@ export const ComponentLibrary = () => {
           icon: LayoutGrid,
           defaultContent: 'Card Title\nThis is a container box.',
           style: {
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: '500',
             backgroundColor: '#ffffff',
             color: '#111827',
             padding: '18px',
@@ -286,6 +292,8 @@ export const ComponentLibrary = () => {
           requiredPlan: 'ultra',
           defaultContent: 'Enter email address...',
           style: {
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: '400',
             backgroundColor: '#ffffff',
             color: '#111827',
             padding: '10px 16px',
@@ -304,6 +312,8 @@ export const ComponentLibrary = () => {
           requiredPlan: 'ultra',
           defaultContent: 'Write your message here...',
           style: {
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: '400',
             backgroundColor: '#ffffff',
             color: '#111827',
             padding: '10px 14px',

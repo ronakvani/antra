@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1149.0",
     "@babel/standalone": "^7.29.9",
     "@dicebear/collection": "^9.4.2",
     "@dicebear/core": "^9.4.3",
